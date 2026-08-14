@@ -85,6 +85,7 @@
     <ClInclude Include="glaux.h" />
     <ClInclude Include="glut.h" />
     <ClInclude Include="iGraphics.h" />
+    <ClInclude Include="Level1.hpp" />
     <ClInclude Include="menu.hpp" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
