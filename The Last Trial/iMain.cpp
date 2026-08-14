@@ -1,4 +1,6 @@
 #include "iGraphics.h"
+#include "menu.hpp"
+
 
 int x = 0;
 int y = 0;
@@ -6,8 +8,7 @@ int y = 0;
 void iDraw()
 {
 	iClear();
-	iFilledRectangle(x, y, 100, 100);
-	iSetColor(255, 255, 255);
+	DrawMenu();
 
 }
 
@@ -18,8 +19,25 @@ void iMouseMove(int mx, int my)
 
 void iPassiveMouseMove(int mx, int my)
 {
-	
-}
+	if (menuScreen == 1)
+	{
+		if (mx >= 130 && mx <= 400 && my >= 350 && my <= 430)
+			hoverButton = 1;
+
+		else if (mx >= 130 && mx <= 400 && my >= 270 && my <= 350)
+			hoverButton = 2;
+
+		else if (mx >= 130 && mx <= 400 && my >= 190 && my <= 270)
+			hoverButton = 3;
+
+		else if (mx >= 130 && mx <= 400 && my >= 110 && my <= 190)
+			hoverButton = 4;
+
+		else
+			hoverButton = 0;
+	}
+	}
+
 
 void iMouse(int button, int state, int mx, int my)
 {
@@ -59,6 +77,10 @@ void fixedUpdate()
 	{
 		x++;
 	}
+	if (isKeyPressed('\r'))
+	{
+		menuScreen = 1;
+	}
 
 	if (isKeyPressed(' ')) {
 		// Playing the audio once
@@ -79,8 +101,10 @@ int main()
 	// If the use of an audio is finished, close it to free memory
 	// mciSendString("close bgsong", NULL, 0, NULL);
 	// mciSendString("close ggsong", NULL, 0, NULL);
+	
 
-	iInitialize(600, 400, "Project Title");
+	iInitialize(1000, 600, "The Last Trial");
+	initMenu();
 	iStart();
 	return 0;
 }
