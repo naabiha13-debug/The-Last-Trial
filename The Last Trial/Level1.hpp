@@ -21,16 +21,11 @@
 #define ROWS 5
 #define COLS 5
 
-// Board floor এর সাইজ (এখন এটাই কালো ফ্লোরের সাইজ, ছবি না)
 #define GRID_WIDTH  300
 #define GRID_HEIGHT 300
 
-// Board floor স্ক্রিনে কোথায় বসবে (ঠিক মাঝখানে, automatic)
 #define GRID_X ((LEVEL1_WIDTH - GRID_WIDTH) / 2)
 #define GRID_Y ((LEVEL1_HEIGHT - GRID_HEIGHT) / 2)
-
-// এখন কোনো image border নেই, তাই padding = 0
-// Board area = পুরো ফ্লোর area
 
 #define BOARD_X GRID_X
 #define BOARD_Y GRID_Y
@@ -38,19 +33,13 @@
 #define BOARD_WIDTH  GRID_WIDTH
 #define BOARD_HEIGHT GRID_HEIGHT
 
-// TILE এর গড় সাইজ (player movement আর mouse click hit-testing এ ব্যবহার হবে)
-
-#define TILE_WIDTH  (BOARD_WIDTH  / COLS)
+#define TILE_WIDTH  (BOARD_WIDTH / COLS)
 #define TILE_HEIGHT (BOARD_HEIGHT / ROWS)
 
 
 // ==========================================
-// PRECISE TILE BOUNDARIES (rounding gap ছাড়াই)
+// PRECISE TILE BOUNDARIES
 // ==========================================
-// Integer division করলে (BOARD_WIDTH / COLS) ভাগশেষ হারিয়ে যায়,
-// ফলে শেষ column/row এ ছোট্ট ফাঁকা জায়গা থেকে যায়।
-// এই ফাংশনগুলো প্রতিটা tile এর exact boundary বের করে,
-// যাতে পুরো board area নিখুঁতভাবে ভরাট হয়, কোনো gap না থাকে।
 
 int getTileLeft(int col)
 {
@@ -86,23 +75,38 @@ int getTileCenterY(int row)
 // ==========================================
 // TILE TYPES
 // ==========================================
+
 #define DIR_DOWN 0
 #define DIR_UP 1
 #define DIR_LEFT 2
 #define DIR_RIGHT 3
+
 #define WHITE 0
 #define RED 1
 #define GREEN 2
-
-// Board এ RED/GREEN tile কত % আসবে (বাকিটা WHITE হবে)
-// যেমন RED=15, GREEN=15 মানে 15% লাল, 15% সবুজ, 70% সাদা
 
 #define RED_TILE_CHANCE 15
 #define GREEN_TILE_CHANCE 15
 
 
 // ==========================================
-// PLAYER
+// GAME SETTINGS
+// ==========================================
+
+#define BOT_COUNT 2
+
+#define GAME_TIME 30
+
+#define TILE_VISIBLE_DURATION 2.0
+
+#define ANIM_FRAME_DURATION 0.15
+
+// Bot কতক্ষণ পর পর move করবে
+#define BOT_MOVE_INTERVAL 0.75
+
+
+// ==========================================
+// PLAYER STRUCTURE
 // ==========================================
 
 struct Player
@@ -120,12 +124,25 @@ struct Player
 
 	int facing;
 	int animFrame;
+
 	bool alive;
 
 	int score;
+
+	bool isBot;
+
+	// Bot-এর movement timer
+	clock_t botTimer;
 };
 
+
+// ==========================================
+// PLAYERS
+// ==========================================
+
 Player player;
+
+Player bots[BOT_COUNT];
 
 
 // ==========================================
@@ -136,10 +153,11 @@ int tiles[ROWS][COLS];
 
 
 // ==========================================
-//images
-
+// IMAGES
+// ==========================================
 
 int backgroundImage;
+
 int playerImg[4][2];
 
 
@@ -148,87 +166,194 @@ int playerImg[4][2];
 // ==========================================
 
 int level1GameOver = 0;
-int level1Time = 30;
+
+int level1Time = GAME_TIME;
+
+bool level1TimerStarted = false;
+
+clock_t level1TimerStart;
 
 
 // ==========================================
-// TILE COLOR REVEAL TIMER
+// TILE VISIBILITY
 // ==========================================
-
-// রং কতক্ষণ দেখানো হবে (সেকেন্ডে)
-#define TILE_VISIBLE_DURATION 2.0
-
-// রং কতক্ষণ লুকানো থাকবে (সেকেন্ডে)
-#define TILE_HIDDEN_DURATION 3.0
 
 clock_t tileTimerStart;
+
 bool tilesVisible = true;
-#define ANIM_FRAME_DURATION 0.15
+
+
+// ==========================================
+// PLAYER ANIMATION TIMER
+// ==========================================
+
 clock_t playerAnimTimerStart;
+
+
+// ==========================================
+// GAME OVER / WINNER
+// ==========================================
+
+int winnerType = 0;
+// 0 = none
+// 1 = player survived
+// 2 = bot survived
+// 3 = multiple survived
+
+
+// ==========================================
+// UPDATE PLAYER ANIMATION
+// ==========================================
 
 void updatePlayerAnimation()
 {
-	bool isMoving = (player.row != player.targetRow) || (player.col != player.targetCol);
+	bool isMoving =
+		(player.row != player.targetRow) ||
+		(player.col != player.targetCol);
 
 	if (isMoving == false)
 	{
 		player.animFrame = 0;
-		return;
+	}
+	else
+	{
+		double elapsed =
+			(double)(clock() - playerAnimTimerStart)
+			/ CLOCKS_PER_SEC;
+
+		if (elapsed >= ANIM_FRAME_DURATION)
+		{
+			player.animFrame = 1 - player.animFrame;
+			playerAnimTimerStart = clock();
+		}
 	}
 
-	double elapsed = (double)(clock() - playerAnimTimerStart) / CLOCKS_PER_SEC;
-
-	if (elapsed >= ANIM_FRAME_DURATION)
+	for (int i = 0; i < BOT_COUNT; i++)
 	{
-		player.animFrame = 1 - player.animFrame;
-		playerAnimTimerStart = clock();
+		bool botMoving =
+			(bots[i].row != bots[i].targetRow) ||
+			(bots[i].col != bots[i].targetCol);
+
+		if (botMoving == false)
+		{
+			bots[i].animFrame = 0;
+		}
+		else
+		{
+			double elapsed =
+				(double)(clock() - bots[i].botTimer)
+				/ CLOCKS_PER_SEC;
+
+			if (elapsed >= ANIM_FRAME_DURATION)
+			{
+				bots[i].animFrame = 1 - bots[i].animFrame;
+				bots[i].botTimer = clock();
+			}
+		}
 	}
 }
 
 
 // ==========================================
-// LOAD LEVEL 1 IMAGES
+// LOAD IMAGES
 // ==========================================
 
 void initLevel1()
 {
 	backgroundImage =
 		iLoadImage("Image//background.png");
-	playerImg[DIR_DOWN][0] = iLoadImage("Image//walk_down_1.png");
-	playerImg[DIR_DOWN][1] = iLoadImage("Image//walk_down_2.png");
-	playerImg[DIR_UP][0] = iLoadImage("Image//walk_up_1.png");
-	playerImg[DIR_UP][1] = iLoadImage("Image//walk_up_2.png");
-	playerImg[DIR_LEFT][0] = iLoadImage("Image//walk_left_1.png");
-	playerImg[DIR_LEFT][1] = iLoadImage("Image//walk_left_2.png");
-	playerImg[DIR_RIGHT][0] = iLoadImage("Image//walk_right_1.png");
-	playerImg[DIR_RIGHT][1] = iLoadImage("Image//walk_right_2.png");
 
-	
+	playerImg[DIR_DOWN][0] =
+		iLoadImage("Image//walk_down_1.png");
+
+	playerImg[DIR_DOWN][1] =
+		iLoadImage("Image//walk_down_2.png");
+
+	playerImg[DIR_UP][0] =
+		iLoadImage("Image//walk_up_1.png");
+
+	playerImg[DIR_UP][1] =
+		iLoadImage("Image//walk_up_2.png");
+
+	playerImg[DIR_LEFT][0] =
+		iLoadImage("Image//walk_left_1.png");
+
+	playerImg[DIR_LEFT][1] =
+		iLoadImage("Image//walk_left_2.png");
+
+	playerImg[DIR_RIGHT][0] =
+		iLoadImage("Image//walk_right_1.png");
+
+	playerImg[DIR_RIGHT][1] =
+		iLoadImage("Image//walk_right_2.png");
 }
 
 
 // ==========================================
-// INITIALIZE PLAYER
+// INITIALIZE ONE CHARACTER
 // ==========================================
 
-void initializePlayer()
+void initializeCharacter(
+	Player &p,
+	int row,
+	int col,
+	bool bot
+	)
 {
-	player.row = 4;
-	player.col = 0;
+	p.row = row;
+	p.col = col;
 
-	player.targetRow = 4;
-	player.targetCol = 0;
+	p.targetRow = row;
+	p.targetCol = col;
 
-	player.x = getTileCenterX(player.col);
-	player.y = getTileCenterY(player.row);
+	p.x = getTileCenterX(col);
+	p.y = getTileCenterY(row);
 
-	player.speed = 4;
+	p.speed = 4;
 
-	player.alive = true;
+	p.alive = true;
 
-	player.score = 0;
-	player.facing = DIR_DOWN;
-	player.animFrame = 0;
+	p.score = 0;
+
+	p.facing = DIR_DOWN;
+
+	p.animFrame = 0;
+
+	p.isBot = bot;
+
+	p.botTimer = clock();
+}
+
+
+// ==========================================
+// INITIALIZE PLAYER + BOTS
+// ==========================================
+
+void initializePlayers()
+{
+	// Human player
+	initializeCharacter(
+		player,
+		4,
+		0,
+		false
+		);
+
+	// Bot 1
+	initializeCharacter(
+		bots[0],
+		4,
+		1,
+		true
+		);
+
+	// Bot 2
+	initializeCharacter(
+		bots[1],
+		4,
+		2,
+		true
+		);
 }
 
 
@@ -238,27 +363,23 @@ void initializePlayer()
 
 void generateTiles()
 {
-	int r;
-	int c;
-
-	for (r = 0; r < ROWS; r++)
+	for (int r = 0; r < ROWS; r++)
 	{
-		for (c = 0; c < COLS; c++)
+		for (int c = 0; c < COLS; c++)
 		{
-			// 0-99 এর মধ্যে random সংখ্যা, percentage হিসেবে ভাগ হবে
-
 			int randomValue = rand() % 100;
 
 			if (randomValue < RED_TILE_CHANCE)
 			{
 				tiles[r][c] = RED;
 			}
-
-			else if (randomValue < RED_TILE_CHANCE + GREEN_TILE_CHANCE)
+			else if (
+				randomValue <
+				RED_TILE_CHANCE + GREEN_TILE_CHANCE
+				)
 			{
 				tiles[r][c] = GREEN;
 			}
-
 			else
 			{
 				tiles[r][c] = WHITE;
@@ -266,41 +387,336 @@ void generateTiles()
 		}
 	}
 
-
-	// Starting tile is safe
-
+	// Starting positions must be safe
 	tiles[4][0] = GREEN;
+	tiles[4][1] = GREEN;
+	tiles[4][2] = GREEN;
 }
 
 
 // ==========================================
-// UPDATE TILE COLOR REVEAL TIMER
+// CHECK WHETHER TILE IS OCCUPIED
+// ==========================================
+
+bool isTileOccupied(int row, int col, Player *ignorePlayer)
+{
+	if (
+		&player != ignorePlayer &&
+		player.alive &&
+		player.row == row &&
+		player.col == col
+		)
+	{
+		return true;
+	}
+
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		if (
+			&bots[i] != ignorePlayer &&
+			bots[i].alive &&
+			bots[i].row == row &&
+			bots[i].col == col
+			)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+// ==========================================
+// CHECK VALID TILE
+// ==========================================
+
+bool isValidTile(int row, int col, Player *p)
+{
+	if (
+		row < 0 ||
+		row >= ROWS ||
+		col < 0 ||
+		col >= COLS
+		)
+	{
+		return false;
+	}
+
+	// Red tile cannot be entered
+	if (tiles[row][col] == RED)
+	{
+		return false;
+	}
+
+	// White tile is not safe
+	if (tiles[row][col] != GREEN)
+	{
+		return false;
+	}
+
+	// Another player/bot is already there
+	if (isTileOccupied(row, col, p))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+// ==========================================
+// CHECK WHETHER MOVEMENT IS ADJACENT
+// ==========================================
+
+bool isAdjacent(
+	int fromRow,
+	int fromCol,
+	int toRow,
+	int toCol
+	)
+{
+	int rowDifference = abs(toRow - fromRow);
+	int colDifference = abs(toCol - fromCol);
+
+	// Only one tile at a time
+	if (
+		(rowDifference == 1 && colDifference == 0) ||
+		(rowDifference == 0 && colDifference == 1)
+		)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+// ==========================================
+// MOVE CHARACTER
+// ==========================================
+
+bool moveCharacterToTile(
+	Player &p,
+	int row,
+	int col
+	)
+{
+	// Must move only one tile at a time
+	if (
+		!isAdjacent(
+		p.row,
+		p.col,
+		row,
+		col
+		)
+		)
+	{
+		return false;
+	}
+
+	// Target must be green and unoccupied
+	if (!isValidTile(row, col, &p))
+	{
+		return false;
+	}
+
+	if (row > p.row)
+	{
+		p.facing = DIR_UP;
+	}
+	else if (row < p.row)
+	{
+		p.facing = DIR_DOWN;
+	}
+	else if (col > p.col)
+	{
+		p.facing = DIR_RIGHT;
+	}
+	else if (col < p.col)
+	{
+		p.facing = DIR_LEFT;
+	}
+
+	p.targetRow = row;
+	p.targetCol = col;
+
+	return true;
+}
+
+
+// ==========================================
+// CHECK CHARACTER TILE
+// ==========================================
+
+void checkCharacterTile(Player &p)
+{
+	if (tiles[p.row][p.col] == RED)
+	{
+		p.alive = false;
+
+		level1GameOver = 1;
+
+		return;
+	}
+
+	if (tiles[p.row][p.col] == GREEN)
+	{
+		p.score++;
+	}
+}
+
+
+// ==========================================
+// UPDATE CHARACTER MOVEMENT
+// ==========================================
+
+void updateCharacter(Player &p)
+{
+	if (!p.alive)
+	{
+		return;
+	}
+
+	bool needsToMove =
+		(p.row != p.targetRow) ||
+		(p.col != p.targetCol);
+
+	if (!needsToMove)
+	{
+		return;
+	}
+
+	int targetX =
+		getTileCenterX(p.targetCol);
+
+	int targetY =
+		getTileCenterY(p.targetRow);
+
+	float dx =
+		targetX - p.x;
+
+	float dy =
+		targetY - p.y;
+
+	float distance =
+		sqrt(dx * dx + dy * dy);
+
+	if (distance > 1)
+	{
+		p.x += (dx / distance) * p.speed;
+		p.y += (dy / distance) * p.speed;
+	}
+	else
+	{
+		p.x = targetX;
+		p.y = targetY;
+
+		p.row = p.targetRow;
+		p.col = p.targetCol;
+
+		checkCharacterTile(p);
+	}
+}
+
+
+// ==========================================
+// UPDATE TILE VISIBILITY
 // ==========================================
 
 void updateTileVisibility()
 {
 	double elapsed =
-		(double)(clock() - tileTimerStart) / CLOCKS_PER_SEC;
+		(double)(clock() - tileTimerStart)
+		/ CLOCKS_PER_SEC;
 
 	if (tilesVisible)
 	{
 		if (elapsed >= TILE_VISIBLE_DURATION)
 		{
 			tilesVisible = false;
+
 			tileTimerStart = clock();
+
+			// Timer starts when challenge begins
+			level1TimerStarted = true;
+
+			level1TimerStart = clock();
 		}
 	}
-
 	else
 	{
-		if (elapsed >= TILE_HIDDEN_DURATION)
+		// IMPORTANT:
+		// Do NOT generate new tiles every cycle.
+		// The same safe pattern remains for the whole round.
+	}
+}
+
+
+// ==========================================
+// UPDATE GAME TIMER
+// ==========================================
+
+void updateLevel1Timer()
+{
+	if (!level1TimerStarted)
+	{
+		return;
+	}
+
+	if (level1GameOver)
+	{
+		return;
+	}
+
+	double elapsed =
+		(double)(clock() - level1TimerStart)
+		/ CLOCKS_PER_SEC;
+
+	int remaining =
+		GAME_TIME - (int)elapsed;
+
+	if (remaining < 0)
+	{
+		remaining = 0;
+	}
+
+	level1Time = remaining;
+
+	if (level1Time <= 0)
+	{
+		level1Time = 0;
+
+		level1GameOver = 1;
+
+		// Determine survivors
+		bool playerAlive = player.alive;
+
+		bool botAlive = false;
+
+		for (int i = 0; i < BOT_COUNT; i++)
 		{
-			// প্রতি cycle এ নতুন random pattern তৈরি হচ্ছে
+			if (bots[i].alive)
+			{
+				botAlive = true;
+			}
+		}
 
-			generateTiles();
-
-			tilesVisible = true;
-			tileTimerStart = clock();
+		if (playerAlive && botAlive)
+		{
+			winnerType = 3;
+		}
+		else if (playerAlive)
+		{
+			winnerType = 1;
+		}
+		else if (botAlive)
+		{
+			winnerType = 2;
+		}
+		else
+		{
+			winnerType = 0;
 		}
 	}
 }
@@ -312,46 +728,37 @@ void updateTileVisibility()
 
 void drawTiles()
 {
-	int r;
-	int c;
-
-	for (r = 0; r < ROWS; r++)
+	for (int r = 0; r < ROWS; r++)
 	{
-		for (c = 0; c < COLS; c++)
+		for (int c = 0; c < COLS; c++)
 		{
 			int tileX = getTileLeft(c);
 			int tileY = getTileTop(r);
 
-			int tileW = getTileRight(c) - tileX;
-			int tileH = getTileBottom(r) - tileY;
+			int tileW =
+				getTileRight(c) - tileX;
 
+			int tileH =
+				getTileBottom(r) - tileY;
 
-			// Hidden phase এ কিছুই আঁকা হবে না, grid image পুরোটা দেখা যাবে
-
-			if (tilesVisible == false)
+			// Hide colors after memorization
+			if (!tilesVisible)
 			{
 				continue;
 			}
 
-
-			// Visible phase এ শুধু RED/GREEN tile এর উপর রং বসবে
-			// WHITE tile এ কিছুই আঁকা হবে না, নিচের grid image দেখা যাবে
-
 			if (tiles[r][c] == RED)
 			{
-				iSetColor(150, 25, 25); // dark red
+				iSetColor(150, 25, 25);
 			}
-
 			else if (tiles[r][c] == GREEN)
 			{
-				iSetColor(20, 110, 45); // dark green
+				iSetColor(20, 110, 45);
 			}
-
 			else
 			{
 				continue;
 			}
-
 
 			iFilledRectangle(
 				tileX,
@@ -359,9 +766,6 @@ void drawTiles()
 				tileW,
 				tileH
 				);
-
-
-			// Tile এর চারপাশে হালকা কালো বর্ডার
 
 			iSetColor(30, 30, 30);
 
@@ -377,27 +781,93 @@ void drawTiles()
 
 
 // ==========================================
-// DRAW PLAYER
+// DRAW ONE CHARACTER
 // ==========================================
 
-void drawPlayer()
+void drawCharacter(Player &p)
 {
-	if (player.alive == false)
+	if (!p.alive)
 	{
 		return;
 	}
 
-	int img = playerImg[player.facing][player.animFrame];
+	int img =
+		playerImg[p.facing][p.animFrame];
 
 	iShowImage(
-		player.x - 18,
-		player.y - 24,
+		p.x - 18,
+		p.y - 24,
 		36,
 		48,
 		img
 		);
 }
 
+
+// ==========================================
+// DRAW TIMER
+// ==========================================
+
+void drawTimer()
+{
+	iSetColor(255, 255, 255);
+
+	char timerText[50];
+
+	sprintf(
+		timerText,
+		"TIME: %d",
+		level1Time
+		);
+
+	iText(
+		40,
+		550,
+		timerText,
+		GLUT_BITMAP_HELVETICA_18
+		);
+}
+
+
+// ==========================================
+// DRAW GAME OVER
+// ==========================================
+
+void drawGameOver()
+{
+	iSetColor(180, 0, 0);
+
+	iFilledRectangle(
+		250,
+		230,
+		500,
+		140
+		);
+
+	iSetColor(255, 255, 255);
+
+	iText(
+		410,
+		310,
+		"GAME OVER",
+		GLUT_BITMAP_HELVETICA_18
+		);
+
+	if (level1Time <= 0)
+	{
+		iText(
+			390,
+			275,
+			"TIME UP!",
+			GLUT_BITMAP_HELVETICA_18
+			);
+	}
+}
+
+
+// ==========================================
+// DRAW LEVEL 1
+// ==========================================
 
 void drawLevel1()
 {
@@ -409,8 +879,6 @@ void drawLevel1()
 		backgroundImage
 		);
 
-	// Grid image এর বদলে plain কালো floor
-
 	iSetColor(15, 15, 15);
 
 	iFilledRectangle(
@@ -419,9 +887,6 @@ void drawLevel1()
 		GRID_WIDTH,
 		GRID_HEIGHT
 		);
-
-
-	// পুরো board এর চারপাশে গাঢ় বর্ডার (frame)
 
 	iSetColor(5, 5, 5);
 
@@ -447,91 +912,168 @@ void drawLevel1()
 		);
 
 	drawTiles();
-	drawPlayer();
+
+	drawCharacter(player);
+
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		drawCharacter(bots[i]);
+	}
+
+	drawTimer();
+
+	if (level1GameOver)
+	{
+		drawGameOver();
+	}
 }
+
+
 // ==========================================
-// MOVE PLAYER TO CLICKED TILE
+// HUMAN PLAYER MOVEMENT
 // ==========================================
 
 void movePlayerToTile(int row, int col)
 {
-	if (row > player.row)      player.facing = DIR_UP;
-	else if (row < player.row) player.facing = DIR_DOWN;
-	else if (col > player.col) player.facing = DIR_RIGHT;
-	else if (col < player.col) player.facing = DIR_LEFT;
-
-	player.targetRow = row;
-	player.targetCol = col;
-}
-
-
-// ==========================================
-// CHECK PLAYER'S TILE
-// ==========================================
-
-void checkPlayerTile()
-{
-	if (tiles[player.row][player.col] == RED)
-	{
-		player.alive = false;
-
-		level1GameOver = 1;
-	}
-
-	else if (tiles[player.row][player.col] == GREEN)
-	{
-		player.score++;
-	}
-
-	else if (tiles[player.row][player.col] == WHITE)
-	{
-		// Nothing happens
-	}
-}
-
-
-// ==========================================
-// SMOOTH PLAYER MOVEMENT
-// ==========================================
-
-void updatePlayer()
-{
-	if (player.alive == false)
+	if (!player.alive)
 	{
 		return;
 	}
 
-	bool needsToMove = (player.row != player.targetRow) || (player.col != player.targetCol);
+	moveCharacterToTile(
+		player,
+		row,
+		col
+		);
+}
 
-	if (needsToMove == false)
+
+// ==========================================
+// BOT AI
+// ==========================================
+
+void botChooseMove(Player &bot)
+{
+	if (!bot.alive)
 	{
-		return; // already stood on this tile, effect already applied once, do nothing more
+		return;
 	}
 
-	int targetX = getTileCenterX(player.targetCol);
-	int targetY = getTileCenterY(player.targetRow);
-
-	float dx = targetX - player.x;
-	float dy = targetY - player.y;
-
-	float distance = sqrt(dx * dx + dy * dy);
-
-	if (distance > 1)
+	// Already moving
+	if (
+		bot.row != bot.targetRow ||
+		bot.col != bot.targetCol
+		)
 	{
-		player.x += (dx / distance) * player.speed;
-		player.y += (dy / distance) * player.speed;
+		return;
+	}
+
+	int possibleRows[4] =
+	{
+		bot.row + 1,
+		bot.row - 1,
+		bot.row,
+		bot.row
+	};
+
+	int possibleCols[4] =
+	{
+		bot.col,
+		bot.col,
+		bot.col - 1,
+		bot.col + 1
+	};
+
+	int validRows[4];
+
+	int validCols[4];
+
+	int validCount = 0;
+
+	for (int i = 0; i < 4; i++)
+	{
+		int r = possibleRows[i];
+		int c = possibleCols[i];
+
+		if (
+			isValidTile(
+			r,
+			c,
+			&bot
+			)
+			)
+		{
+			validRows[validCount] = r;
+			validCols[validCount] = c;
+
+			validCount++;
+		}
+	}
+
+	if (validCount == 0)
+	{
+		return;
+	}
+
+	// 75% chance to make a normal safe decision
+	// 25% chance to choose a random valid move
+	int choice;
+
+	int randomValue = rand() % 100;
+
+	if (randomValue < 75)
+	{
+		choice = rand() % validCount;
 	}
 	else
 	{
-		player.x = targetX;
-		player.y = targetY;
+		choice = rand() % validCount;
+	}
 
-		player.row = player.targetRow;
-		player.col = player.targetCol;
+	moveCharacterToTile(
+		bot,
+		validRows[choice],
+		validCols[choice]
+		);
+}
 
-		checkPlayerTile();
+
+// ==========================================
+// UPDATE BOTS
+// ==========================================
+
+void updateBots()
+{
+	if (level1GameOver)
+	{
+		return;
+	}
+
+	if (tilesVisible)
+	{
+		return;
+	}
+
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		if (!bots[i].alive)
+		{
+			continue;
+		}
+
+		double elapsed =
+			(double)(clock() - bots[i].botTimer)
+			/ CLOCKS_PER_SEC;
+
+		if (elapsed >= BOT_MOVE_INTERVAL)
+		{
+			botChooseMove(bots[i]);
+
+			bots[i].botTimer = clock();
+		}
 	}
 }
+
 
 // ==========================================
 // LEVEL 1 MOUSE
@@ -554,21 +1096,16 @@ void level1Mouse(
 		return;
 	}
 
-	if (level1GameOver == 1)
+	if (level1GameOver)
 	{
 		return;
 	}
 
-	// রং দেখা যাওয়ার সময় (memorize phase) ক্লিক করা যাবে না
-	// রং লুকানো থাকলে (challenge phase) তখনই শুধু move করা যাবে
-
+	// Cannot move during memorization phase
 	if (tilesVisible)
 	{
 		return;
 	}
-
-
-	// Check whether click is inside board
 
 	if (
 		mx >= BOARD_X &&
@@ -578,11 +1115,18 @@ void level1Mouse(
 		)
 	{
 		int clickedCol =
-			(int)((double)(mx - BOARD_X) * COLS / BOARD_WIDTH);
+			(int)(
+			(double)(mx - BOARD_X)
+			* COLS /
+			BOARD_WIDTH
+			);
 
 		int clickedRow =
-			(int)((double)(my - BOARD_Y) * ROWS / BOARD_HEIGHT);
-
+			(int)(
+			(double)(my - BOARD_Y)
+			* ROWS /
+			BOARD_HEIGHT
+			);
 
 		movePlayerToTile(
 			clickedRow,
@@ -593,14 +1137,33 @@ void level1Mouse(
 
 
 // ==========================================
-// UPDATE LEVEL 1
+// LEVEL 1 UPDATE
 // ==========================================
 
 void level1Update()
 {
+	if (level1GameOver)
+	{
+		return;
+	}
+
 	updateTileVisibility();
 
-	updatePlayer();
+	updateLevel1Timer();
+
+	if (level1GameOver)
+	{
+		return;
+	}
+
+	updateBots();
+
+	updateCharacter(player);
+
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		updateCharacter(bots[i]);
+	}
 
 	updatePlayerAnimation();
 }
@@ -612,25 +1175,30 @@ void level1Update()
 
 void startLevel1()
 {
-	// rand() কে seed করা হচ্ছে, নাহলে প্রতিবার একই pattern আসে
-
-	srand((unsigned int)(time(0) + clock()));
+	srand(
+		(unsigned int)(
+		time(0) + clock()
+		)
+		);
 
 	initLevel1();
 
-	initializePlayer();
+	initializePlayers();
 
 	generateTiles();
 
 	level1GameOver = 0;
 
-	level1Time = 30;
+	level1Time = GAME_TIME;
 
-	// Tile color reveal timer শুরু করা হচ্ছে
+	winnerType = 0;
+
+	level1TimerStarted = false;
 
 	tileTimerStart = clock();
 
 	tilesVisible = true;
+
 	playerAnimTimerStart = clock();
 }
 
