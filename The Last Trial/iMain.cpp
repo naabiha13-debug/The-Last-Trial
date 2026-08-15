@@ -21,6 +21,14 @@ void iDraw()
 	{
 		drawLevel1();
 	}
+	else if (currentScreen == 2)
+	{
+		DrawLevelSelection();
+	}
+	else if (currentScreen == 3)
+	{
+		DrawCredits();
+	}
 }
 
 
@@ -59,10 +67,34 @@ void iPassiveMouseMove(int mx, int my)
 			hoverButton = 0;
 		}
 	}
+	else if (currentScreen == 2)
+	{
+		if (mx >= 365 && mx <= 635 &&
+			my >= 360 && my <= 440)
+		{
+			hoverLevel = 1;
+		}
+		else if (mx >= 365 && mx <= 635 &&
+			my >= 260 && my <= 340)
+		{
+			hoverLevel = 2;
+		}
+		else if (mx >= 365 && mx <= 635 &&
+			my >= 160 && my <= 240)
+		{
+			hoverLevel = 3;
+		}
+		else
+		{
+			hoverLevel = 0;
+		}
+	}
 	else
 	{
 		hoverButton = 0;
+		hoverLevel = 0;
 	}
+	
 }
 
 
@@ -70,22 +102,34 @@ void iMouse(int button, int state, int mx, int my)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		if (currentScreen == 0)
+		if (currentScreen == 0 && menuScreen == 1)   // only clickable once buttons are shown
 		{
-			// Play বাটনের কো-অর্ডিনেট (আপনার hoverButton==1 এর জায়গা অনুযায়ী)
-			if (mx >= 130 && mx <= 400 &&
-				my >= 350 && my <= 430)
+			if (hoverButton == 1)   // Play
+			{
+				currentScreen = 2;
+			}
+			else if (hoverButton == 3)   // Credits
+			{
+				currentScreen = 3;
+			}
+		}
+		else if (currentScreen == 2)
+		{
+			if (mx >= 365 && mx <= 635 &&
+				my >= 360 && my <= 440)
 			{
 				currentScreen = 1;
 				startLevel1();
 			}
 		}
-		else if (currentScreen == 1)
+		else if (currentScreen == 3)
 		{
-			level1Mouse(button, state, mx, my);
+			// click anywhere on the credits screen to go back
+			currentScreen = 0;
 		}
 	}
 }
+
 // Special Keys:
 // GLUT_KEY_F1, GLUT_KEY_F2, GLUT_KEY_F3, GLUT_KEY_F4, GLUT_KEY_F5, GLUT_KEY_F6, GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11, GLUT_KEY_F12, 
 // GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN, GLUT_KEY_PAGE UP, GLUT_KEY_PAGE DOWN, GLUT_KEY_HOME, GLUT_KEY_END, GLUT_KEY_INSERT

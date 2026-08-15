@@ -1,7 +1,6 @@
 #ifndef MENU_HPP
 #define MENU_HPP
 
-
 int menuBackground;
 int menuTitle;
 int menuScreen = 0;
@@ -11,6 +10,13 @@ int buttonStory;
 int buttonCredit;
 int buttonExit;
 int hoverButton = 0;
+int selectedLevel = 0;
+int buttonLevel1;
+int buttonLevel2;
+int buttonLevel3;
+int hoverLevel = 0;
+int creditsImage;
+
 
 void initMenu()
 {
@@ -21,6 +27,10 @@ void initMenu()
 	buttonStory = iLoadImage("Image//story.png");
 	buttonCredit = iLoadImage("Image//credits.png");
 	buttonExit = iLoadImage("Image//exit.png");
+	buttonLevel1 = iLoadImage("Image//level1.png");
+	buttonLevel2 = iLoadImage("Image//level2.png");
+	buttonLevel3 = iLoadImage("Image//level3.png");
+	creditsImage = iLoadImage("Image//team.png");
 }
 void DrawMenu()
 {
@@ -54,6 +64,38 @@ void DrawMenu()
 		else
 			iShowImage(130, 110, 270, 80, buttonExit);
 	}
+	else if (menuScreen == 2)
+	{
+		iShowImage(130, 350, 270, 80, buttonLevel1);
+		iShowImage(130, 250, 270, 80, buttonLevel2);
+		iShowImage(130, 150, 270, 80, buttonLevel3);
+	}
+	
 }
+void DrawLevelSelection()
+{
+	iShowImage(0, 0, 1000, 600, menuBackground);
+
+	if (hoverLevel == 1)
+		iShowImage(360, 355, 280, 90, buttonLevel1);
+	else
+		iShowImage(365, 360, 270, 80, buttonLevel1);
+
+	if (hoverLevel == 2)
+		iShowImage(360, 255, 280, 90, buttonLevel2);
+	else
+		iShowImage(365, 260, 270, 80, buttonLevel2);
+
+	if (hoverLevel == 3)
+		iShowImage(360, 155, 280, 90, buttonLevel3);
+	else
+		iShowImage(365, 160, 270, 80, buttonLevel3);
+}
+void DrawCredits()
+{
+	iShowImage(0, 0, 1000, 600, menuBackground);
+	iShowImage(200, 100, 600, 400, creditsImage);   // was buttonCredit
+}
+
 
 #endif
