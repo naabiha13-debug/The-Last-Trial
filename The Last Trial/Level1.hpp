@@ -86,7 +86,10 @@ int getTileCenterY(int row)
 // ==========================================
 // TILE TYPES
 // ==========================================
-
+#define DIR_DOWN 0
+#define DIR_UP 1
+#define DIR_LEFT 2
+#define DIR_RIGHT 3
 #define WHITE 0
 #define RED 1
 #define GREEN 2
@@ -115,6 +118,8 @@ struct Player
 
 	int speed;
 
+	int facing;
+	int animFrame;
 	bool alive;
 
 	int score;
@@ -131,12 +136,11 @@ int tiles[ROWS][COLS];
 
 
 // ==========================================
-// IMAGE VARIABLES
-// ==========================================
+//images
+
 
 int backgroundImage;
-int gridImage;
-int playerImage;
+int playerImg[4][2];
 
 
 // ==========================================
@@ -159,6 +163,27 @@ int level1Time = 30;
 
 clock_t tileTimerStart;
 bool tilesVisible = true;
+#define ANIM_FRAME_DURATION 0.15
+clock_t playerAnimTimerStart;
+
+void updatePlayerAnimation()
+{
+	bool isMoving = (player.row != player.targetRow) || (player.col != player.targetCol);
+
+	if (isMoving == false)
+	{
+		player.animFrame = 0;
+		return;
+	}
+
+	double elapsed = (double)(clock() - playerAnimTimerStart) / CLOCKS_PER_SEC;
+
+	if (elapsed >= ANIM_FRAME_DURATION)
+	{
+		player.animFrame = 1 - player.animFrame;
+		playerAnimTimerStart = clock();
+	}
+}
 
 
 // ==========================================
@@ -169,12 +194,16 @@ void initLevel1()
 {
 	backgroundImage =
 		iLoadImage("Image//background.png");
+	playerImg[DIR_DOWN][0] = iLoadImage("Image//walk_down_1.png");
+	playerImg[DIR_DOWN][1] = iLoadImage("Image//walk_down_2.png");
+	playerImg[DIR_UP][0] = iLoadImage("Image//walk_up_1.png");
+	playerImg[DIR_UP][1] = iLoadImage("Image//walk_up_2.png");
+	playerImg[DIR_LEFT][0] = iLoadImage("Image//walk_left_1.png");
+	playerImg[DIR_LEFT][1] = iLoadImage("Image//walk_left_2.png");
+	playerImg[DIR_RIGHT][0] = iLoadImage("Image//walk_right_1.png");
+	playerImg[DIR_RIGHT][1] = iLoadImage("Image//walk_right_2.png");
 
-	// grid.png আর ব্যবহার হচ্ছে না, plain কালো floor দিয়ে বদলানো হয়েছে
-	// gridImage = iLoadImage("Image//grid.png");
-
-	playerImage =
-		iLoadImage("Image//player.png");
+	
 }
 
 
@@ -198,6 +227,8 @@ void initializePlayer()
 	player.alive = true;
 
 	player.score = 0;
+	player.facing = DIR_DOWN;
+	player.animFrame = 0;
 }
 
 
@@ -356,12 +387,14 @@ void drawPlayer()
 		return;
 	}
 
+	int img = playerImg[player.facing][player.animFrame];
+
 	iShowImage(
-		player.x - 30,
-		player.y - 30,
-		60,
-		60,
-		playerImage
+		player.x - 18,
+		player.y - 24,
+		36,
+		48,
+		img
 		);
 }
 
@@ -420,11 +453,13 @@ void drawLevel1()
 // MOVE PLAYER TO CLICKED TILE
 // ==========================================
 
-void movePlayerToTile(
-	int row,
-	int col
-	)
+void movePlayerToTile(int row, int col)
 {
+	if (row > player.row)      player.facing = DIR_UP;
+	else if (row < player.row) player.facing = DIR_DOWN;
+	else if (col > player.col) player.facing = DIR_RIGHT;
+	else if (col < player.col) player.facing = DIR_LEFT;
+
 	player.targetRow = row;
 	player.targetCol = col;
 }
@@ -466,31 +501,26 @@ void updatePlayer()
 		return;
 	}
 
+	bool needsToMove = (player.row != player.targetRow) || (player.col != player.targetCol);
+
+	if (needsToMove == false)
+	{
+		return; // already stood on this tile, effect already applied once, do nothing more
+	}
 
 	int targetX = getTileCenterX(player.targetCol);
 	int targetY = getTileCenterY(player.targetRow);
 
+	float dx = targetX - player.x;
+	float dy = targetY - player.y;
 
-	float dx =
-		targetX - player.x;
-
-	float dy =
-		targetY - player.y;
-
-
-	float distance =
-		sqrt(dx * dx + dy * dy);
-
+	float distance = sqrt(dx * dx + dy * dy);
 
 	if (distance > 1)
 	{
-		player.x +=
-			(dx / distance) * player.speed;
-
-		player.y +=
-			(dy / distance) * player.speed;
+		player.x += (dx / distance) * player.speed;
+		player.y += (dy / distance) * player.speed;
 	}
-
 	else
 	{
 		player.x = targetX;
@@ -502,7 +532,6 @@ void updatePlayer()
 		checkPlayerTile();
 	}
 }
-
 
 // ==========================================
 // LEVEL 1 MOUSE
@@ -572,6 +601,8 @@ void level1Update()
 	updateTileVisibility();
 
 	updatePlayer();
+
+	updatePlayerAnimation();
 }
 
 
@@ -600,6 +631,7 @@ void startLevel1()
 	tileTimerStart = clock();
 
 	tilesVisible = true;
+	playerAnimTimerStart = clock();
 }
 
 #endif
