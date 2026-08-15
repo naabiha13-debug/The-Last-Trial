@@ -102,7 +102,13 @@ int getTileCenterY(int row)
 #define ANIM_FRAME_DURATION 0.15
 
 // Bot কতক্ষণ পর পর move করবে
-#define BOT_MOVE_INTERVAL 0.75
+// Bot কতক্ষণ পর পর move করবে
+#define BOT_MOVE_INTERVAL_MIN 0.5
+#define BOT_MOVE_INTERVAL_MAX 1.3
+
+#define BOT_SMART_CHANCE 70
+
+#define TILE_HIDDEN_DURATION 3.0
 
 
 // ==========================================
@@ -132,9 +138,14 @@ struct Player
 	bool isBot;
 
 	// Bot-এর movement timer
+	// Bot-এর movement timer
 	clock_t botTimer;
-};
 
+	double nextDecisionDelay;
+
+	int prevRow;
+	int prevCol;
+};
 
 // ==========================================
 // PLAYERS
@@ -341,6 +352,14 @@ void initializeCharacter(
 	p.isBot = bot;
 
 	p.botTimer = clock();
+
+	p.prevRow = row;
+	p.prevCol = col;
+
+	p.nextDecisionDelay =
+		BOT_MOVE_INTERVAL_MIN +
+		((double)(rand() % 100) / 100.0) *
+		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
 }
 
 
@@ -406,10 +425,13 @@ void generateTiles()
 		}
 	}
 
-	// Starting positions must be safe
-	tiles[4][0] = GREEN;
-	tiles[4][1] = GREEN;
-	tiles[4][2] = GREEN;
+	// Current position gula shobshomoy safe (GREEN) rakhbe
+	tiles[player.row][player.col] = GREEN;
+
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		tiles[bots[i].row][bots[i].col] = GREEN;
+	}
 }
 
 
@@ -422,8 +444,8 @@ bool isTileOccupied(int row, int col, Player *ignorePlayer)
 	if (
 		&player != ignorePlayer &&
 		player.alive &&
-		player.row == row &&
-		player.col == col
+		((player.row == row && player.col == col) ||
+		(player.targetRow == row && player.targetCol == col))
 		)
 	{
 		return true;
@@ -434,8 +456,8 @@ bool isTileOccupied(int row, int col, Player *ignorePlayer)
 		if (
 			&bots[i] != ignorePlayer &&
 			bots[i].alive &&
-			bots[i].row == row &&
-			bots[i].col == col
+			((bots[i].row == row && bots[i].col == col) ||
+			(bots[i].targetRow == row && bots[i].targetCol == col))
 			)
 		{
 			return true;
@@ -468,12 +490,7 @@ bool isValidTile(int row, int col, Player *p)
 		return false;
 	}
 
-	// White tile is not safe
-	if (tiles[row][col] != GREEN)
-	{
-		return false;
-	}
-
+	// Another player/bot is already there
 	// Another player/bot is already there
 	if (isTileOccupied(row, col, p))
 	{
@@ -482,6 +499,11 @@ bool isValidTile(int row, int col, Player *p)
 
 	return true;
 }
+
+
+// ==========================================
+// CHECK WHETHER MOVEMENT IS ADJACENT
+// ==========================================
 
 
 // ==========================================
@@ -521,19 +543,6 @@ bool moveCharacterToTile(
 	int col
 	)
 {
-	// Must move only one tile at a time
-	if (
-		!isAdjacent(
-		p.row,
-		p.col,
-		row,
-		col
-		)
-		)
-	{
-		return false;
-	}
-
 	// Target must be green and unoccupied
 	if (!isValidTile(row, col, &p))
 	{
@@ -631,6 +640,9 @@ void updateCharacter(Player &p)
 		p.x = targetX;
 		p.y = targetY;
 
+		p.prevRow = p.row;
+		p.prevCol = p.col;
+
 		p.row = p.targetRow;
 		p.col = p.targetCol;
 
@@ -665,12 +677,20 @@ void updateTileVisibility()
 	}
 	else
 	{
-		// IMPORTANT:
-		// Do NOT generate new tiles every cycle.
-		// The same safe pattern remains for the whole round.
+		if (elapsed >= TILE_HIDDEN_DURATION)
+		{
+			generateTiles();
+
+			tilesVisible = true;
+			tileTimerStart = clock();
+		}
 	}
 }
 
+
+// ==========================================
+// UPDATE GAME TIMER
+// ==========================================
 
 // ==========================================
 // UPDATE GAME TIMER
@@ -980,6 +1000,7 @@ void movePlayerToTile(int row, int col)
 // BOT AI
 // ==========================================
 
+
 void botChooseMove(Player &bot)
 {
 	if (!bot.alive)
@@ -987,7 +1008,6 @@ void botChooseMove(Player &bot)
 		return;
 	}
 
-	// Already moving
 	if (
 		bot.row != bot.targetRow ||
 		bot.col != bot.targetCol
@@ -996,45 +1016,66 @@ void botChooseMove(Player &bot)
 		return;
 	}
 
-	int possibleRows[4] =
-	{
-		bot.row + 1,
-		bot.row - 1,
-		bot.row,
-		bot.row
-	};
-
-	int possibleCols[4] =
-	{
-		bot.col,
-		bot.col,
-		bot.col - 1,
-		bot.col + 1
-	};
+	int possibleRows[4] = { bot.row + 1, bot.row - 1, bot.row, bot.row };
+	int possibleCols[4] = { bot.col, bot.col, bot.col - 1, bot.col + 1 };
 
 	int validRows[4];
-
 	int validCols[4];
-
 	int validCount = 0;
+
+	int greenRows[4];
+	int greenCols[4];
+	int greenCount = 0;
 
 	for (int i = 0; i < 4; i++)
 	{
 		int r = possibleRows[i];
 		int c = possibleCols[i];
 
-		if (
-			isValidTile(
-			r,
-			c,
-			&bot
-			)
-			)
+		if (isValidTile(r, c, &bot))
 		{
+			// Just-left tile ta shudhu tokhon skip koro jodi onno option thake
+			bool isPrevTile = (r == bot.prevRow && c == bot.prevCol);
+
+			if (isPrevTile)
+			{
+				continue;
+			}
+
 			validRows[validCount] = r;
 			validCols[validCount] = c;
-
 			validCount++;
+
+			if (tiles[r][c] == GREEN)
+			{
+				greenRows[greenCount] = r;
+				greenCols[greenCount] = c;
+				greenCount++;
+			}
+		}
+	}
+
+	// Jodi prevTile bad diye kono option na thake, tahole prevTile-e jaowa allow koro
+	if (validCount == 0)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			int r = possibleRows[i];
+			int c = possibleCols[i];
+
+			if (isValidTile(r, c, &bot))
+			{
+				validRows[validCount] = r;
+				validCols[validCount] = c;
+				validCount++;
+
+				if (tiles[r][c] == GREEN)
+				{
+					greenRows[greenCount] = r;
+					greenCols[greenCount] = c;
+					greenCount++;
+				}
+			}
 		}
 	}
 
@@ -1043,28 +1084,31 @@ void botChooseMove(Player &bot)
 		return;
 	}
 
-	// 75% chance to make a normal safe decision
-	// 25% chance to choose a random valid move
-	int choice;
+	int chosenRow;
+	int chosenCol;
 
-	int randomValue = rand() % 100;
+	int roll = rand() % 100;
 
-	if (randomValue < 75)
+	if (roll < BOT_SMART_CHANCE && greenCount > 0)
 	{
-		choice = rand() % validCount;
+		int pick = rand() % greenCount;
+		chosenRow = greenRows[pick];
+		chosenCol = greenCols[pick];
 	}
 	else
 	{
-		choice = rand() % validCount;
+		int pick = rand() % validCount;
+		chosenRow = validRows[pick];
+		chosenCol = validCols[pick];
 	}
 
-	moveCharacterToTile(
-		bot,
-		validRows[choice],
-		validCols[choice]
-		);
-}
+	moveCharacterToTile(bot, chosenRow, chosenCol);
 
+	bot.nextDecisionDelay =
+		BOT_MOVE_INTERVAL_MIN +
+		((double)(rand() % 100) / 100.0) *
+		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
+}
 
 // ==========================================
 // UPDATE BOTS
@@ -1093,7 +1137,7 @@ void updateBots()
 			(double)(clock() - bots[i].botTimer)
 			/ CLOCKS_PER_SEC;
 
-		if (elapsed >= BOT_MOVE_INTERVAL)
+		if (elapsed >= bots[i].nextDecisionDelay)
 		{
 			botChooseMove(bots[i]);
 

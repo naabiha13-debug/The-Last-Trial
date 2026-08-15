@@ -127,6 +127,10 @@ void iMouse(int button, int state, int mx, int my)
 			// click anywhere on the credits screen to go back
 			currentScreen = 0;
 		}
+		else if (currentScreen == 1)
+		{
+			level1Mouse(button, state, mx, my);
+		}
 	}
 }
 
