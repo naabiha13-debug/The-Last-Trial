@@ -5,18 +5,12 @@
 #include <time.h>
 #include <math.h>
 
-
-// ==========================================
 // LEVEL 1 SCREEN
-// ==========================================
 
 #define LEVEL1_WIDTH 1000
 #define LEVEL1_HEIGHT 600
 
-
-// ==========================================
 // BOARD
-// ==========================================
 
 #define ROWS 5
 #define COLS 5
@@ -36,10 +30,7 @@
 #define TILE_WIDTH  (BOARD_WIDTH / COLS)
 #define TILE_HEIGHT (BOARD_HEIGHT / ROWS)
 
-
-// ==========================================
 // PRECISE TILE BOUNDARIES
-// ==========================================
 
 int getTileLeft(int col)
 {
@@ -71,10 +62,7 @@ int getTileCenterY(int row)
 	return (getTileTop(row) + getTileBottom(row)) / 2;
 }
 
-
-// ==========================================
 // TILE TYPES
-// ==========================================
 
 #define DIR_DOWN 0
 #define DIR_UP 1
@@ -88,11 +76,7 @@ int getTileCenterY(int row)
 #define RED_TILE_CHANCE 15
 #define GREEN_TILE_CHANCE 15
 
-
-// ==========================================
 // GAME SETTINGS
-// ==========================================
-
 #define BOT_COUNT 2
 
 #define GAME_TIME 30
@@ -101,8 +85,7 @@ int getTileCenterY(int row)
 
 #define ANIM_FRAME_DURATION 0.15
 
-// Bot কতক্ষণ পর পর move করবে
-// Bot কতক্ষণ পর পর move করবে
+// Bot movement duration
 #define BOT_MOVE_INTERVAL_MIN 0.5
 #define BOT_MOVE_INTERVAL_MAX 1.3
 
@@ -110,10 +93,7 @@ int getTileCenterY(int row)
 
 #define TILE_HIDDEN_DURATION 3.0
 
-
-// ==========================================
 // PLAYER STRUCTURE
-// ==========================================
 
 struct Player
 {
@@ -137,8 +117,7 @@ struct Player
 
 	bool isBot;
 
-	// Bot-এর movement timer
-	// Bot-এর movement timer
+	// Bot Timer
 	clock_t botTimer;
 
 	double nextDecisionDelay;
@@ -147,35 +126,23 @@ struct Player
 	int prevCol;
 };
 
-// ==========================================
 // PLAYERS
-// ==========================================
 
 Player player;
 
 Player bots[BOT_COUNT];
-
-
-// ==========================================
 // TILE ARRAY
-// ==========================================
 
 int tiles[ROWS][COLS];
 
-
-// ==========================================
 // IMAGES
-// ==========================================
 
 int backgroundImage;
 
 int playerImg[4][2];
 int botImg[BOT_COUNT][4][2];
 
-
-// ==========================================
 // GAME VARIABLES
-// ==========================================
 
 int level1GameOver = 0;
 
@@ -185,26 +152,16 @@ bool level1TimerStarted = false;
 
 clock_t level1TimerStart;
 
-
-// ==========================================
 // TILE VISIBILITY
-// ==========================================
 
 clock_t tileTimerStart;
 
 bool tilesVisible = true;
-
-
-// ==========================================
 // PLAYER ANIMATION TIMER
-// ==========================================
 
 clock_t playerAnimTimerStart;
 
-
-// ==========================================
 // GAME OVER / WINNER
-// ==========================================
 
 int winnerType = 0;
 // 0 = none
@@ -212,10 +169,7 @@ int winnerType = 0;
 // 2 = bot survived
 // 3 = multiple survived
 
-
-// ==========================================
 // UPDATE PLAYER ANIMATION
-// ==========================================
 
 void updatePlayerAnimation()
 {
@@ -265,10 +219,7 @@ void updatePlayerAnimation()
 	}
 }
 
-
-// ==========================================
 // LOAD IMAGES
-// ==========================================
 
 void initLevel1()
 {
@@ -318,11 +269,7 @@ void initLevel1()
 	botImg[1][DIR_RIGHT][1] = iLoadImage("Image//bot2_walk_right_2.png");
 }
 
-
-// ==========================================
 // INITIALIZE ONE CHARACTER
-// ==========================================
-
 void initializeCharacter(
 	Player &p,
 	int row,
@@ -362,10 +309,8 @@ void initializeCharacter(
 		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
 }
 
-
-// ==========================================
 // INITIALIZE PLAYER + BOTS
-// ==========================================
+
 
 void initializePlayers()
 {
@@ -394,10 +339,8 @@ void initializePlayers()
 		);
 }
 
-
-// ==========================================
 // GENERATE RANDOM TILES
-// ==========================================
+
 
 void generateTiles()
 {
@@ -425,7 +368,7 @@ void generateTiles()
 		}
 	}
 
-	// Current position gula shobshomoy safe (GREEN) rakhbe
+	// Keeping Green Tiles in Safe
 	tiles[player.row][player.col] = GREEN;
 
 	for (int i = 0; i < BOT_COUNT; i++)
@@ -434,10 +377,7 @@ void generateTiles()
 	}
 }
 
-
-// ==========================================
 // CHECK WHETHER TILE IS OCCUPIED
-// ==========================================
 
 bool isTileOccupied(int row, int col, Player *ignorePlayer)
 {
@@ -467,10 +407,7 @@ bool isTileOccupied(int row, int col, Player *ignorePlayer)
 	return false;
 }
 
-
-// ==========================================
 // CHECK VALID TILE
-// ==========================================
 
 bool isValidTile(int row, int col, Player *p)
 {
@@ -499,16 +436,8 @@ bool isValidTile(int row, int col, Player *p)
 
 	return true;
 }
-
-
-// ==========================================
 // CHECK WHETHER MOVEMENT IS ADJACENT
-// ==========================================
 
-
-// ==========================================
-// CHECK WHETHER MOVEMENT IS ADJACENT
-// ==========================================
 
 bool isAdjacent(
 	int fromRow,
@@ -532,10 +461,8 @@ bool isAdjacent(
 	return false;
 }
 
-
-// ==========================================
 // MOVE CHARACTER
-// ==========================================
+
 
 bool moveCharacterToTile(
 	Player &p,
@@ -572,10 +499,8 @@ bool moveCharacterToTile(
 	return true;
 }
 
-
-// ==========================================
 // CHECK CHARACTER TILE
-// ==========================================
+
 
 void checkCharacterTile(Player &p)
 {
@@ -594,10 +519,7 @@ void checkCharacterTile(Player &p)
 	}
 }
 
-
-// ==========================================
 // UPDATE CHARACTER MOVEMENT
-// ==========================================
 
 void updateCharacter(Player &p)
 {
@@ -649,12 +571,7 @@ void updateCharacter(Player &p)
 		checkCharacterTile(p);
 	}
 }
-
-
-// ==========================================
 // UPDATE TILE VISIBILITY
-// ==========================================
-
 void updateTileVisibility()
 {
 	double elapsed =
@@ -687,14 +604,8 @@ void updateTileVisibility()
 	}
 }
 
-
-// ==========================================
 // UPDATE GAME TIMER
-// ==========================================
 
-// ==========================================
-// UPDATE GAME TIMER
-// ==========================================
 
 void updateLevel1Timer()
 {
@@ -761,9 +672,9 @@ void updateLevel1Timer()
 }
 
 
-// ==========================================
+
 // DRAW TILES
-// ==========================================
+
 
 void drawTiles()
 {
@@ -819,9 +730,8 @@ void drawTiles()
 }
 
 
-// ==========================================
 // DRAW ONE CHARACTER
-// ==========================================
+
 
 void drawCharacter(Player &p, int botIndex = -1)
 {
@@ -851,9 +761,8 @@ void drawCharacter(Player &p, int botIndex = -1)
 }
 
 
-// ==========================================
+
 // DRAW TIMER
-// ==========================================
 
 void drawTimer()
 {
@@ -877,9 +786,9 @@ void drawTimer()
 }
 
 
-// ==========================================
+
 // DRAW GAME OVER
-// ==========================================
+
 
 void drawGameOver()
 {
@@ -913,9 +822,9 @@ void drawGameOver()
 }
 
 
-// ==========================================
+
 // DRAW LEVEL 1
-// ==========================================
+
 
 void drawLevel1()
 {
@@ -977,9 +886,9 @@ void drawLevel1()
 }
 
 
-// ==========================================
+
 // HUMAN PLAYER MOVEMENT
-// ==========================================
+
 
 void movePlayerToTile(int row, int col)
 {
@@ -996,9 +905,8 @@ void movePlayerToTile(int row, int col)
 }
 
 
-// ==========================================
-// BOT AI
-// ==========================================
+
+// BOT 
 
 
 void botChooseMove(Player &bot)
@@ -1034,7 +942,7 @@ void botChooseMove(Player &bot)
 
 		if (isValidTile(r, c, &bot))
 		{
-			// Just-left tile ta shudhu tokhon skip koro jodi onno option thake
+			
 			bool isPrevTile = (r == bot.prevRow && c == bot.prevCol);
 
 			if (isPrevTile)
@@ -1055,7 +963,7 @@ void botChooseMove(Player &bot)
 		}
 	}
 
-	// Jodi prevTile bad diye kono option na thake, tahole prevTile-e jaowa allow koro
+	
 	if (validCount == 0)
 	{
 		for (int i = 0; i < 4; i++)
@@ -1110,9 +1018,9 @@ void botChooseMove(Player &bot)
 		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
 }
 
-// ==========================================
+
 // UPDATE BOTS
-// ==========================================
+
 
 void updateBots()
 {
@@ -1147,9 +1055,8 @@ void updateBots()
 }
 
 
-// ==========================================
 // LEVEL 1 MOUSE
-// ==========================================
+
 
 void level1Mouse(
 	int button,
@@ -1241,9 +1148,8 @@ void level1Update()
 }
 
 
-// ==========================================
+
 // START LEVEL 1
-// ==========================================
 
 void startLevel1()
 {
