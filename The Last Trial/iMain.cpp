@@ -1,13 +1,16 @@
 ﻿#include "iGraphics.h"
+int storyPage = 1;
 #include "menu.hpp"
 #include "Level1.hpp"
 #include <math.h>
+#include <stdlib.h>
 
 
 int x = 0;
 int y = 0;
 
 int currentScreen = 0;
+
 
 void iDraw()
 {
@@ -28,6 +31,10 @@ void iDraw()
 	else if (currentScreen == 3)
 	{
 		DrawCredits();
+	}
+	else if (currentScreen == 4)
+	{
+		DrawStory();
 	}
 }
 
@@ -88,6 +95,8 @@ void iPassiveMouseMove(int mx, int my)
 		{
 			hoverLevel = 0;
 		}
+
+	
 	}
 	else
 	{
@@ -102,15 +111,24 @@ void iMouse(int button, int state, int mx, int my)
 {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
 	{
-		if (currentScreen == 0 && menuScreen == 1)   // only clickable once buttons are shown
+		if (currentScreen == 0 && menuScreen == 1)
 		{
 			if (hoverButton == 1)   // Play
 			{
 				currentScreen = 2;
 			}
+			else if (hoverButton == 2)   // Story
+			{
+				currentScreen = 4;
+				storyPage = 1;
+			}
 			else if (hoverButton == 3)   // Credits
 			{
 				currentScreen = 3;
+			}
+			else if (hoverButton == 4)   // Exit
+			{
+				exit(0);
 			}
 		}
 		else if (currentScreen == 2)
@@ -118,21 +136,56 @@ void iMouse(int button, int state, int mx, int my)
 			if (mx >= 365 && mx <= 635 &&
 				my >= 360 && my <= 440)
 			{
+				// Level 1
 				currentScreen = 1;
 				startLevel1();
+			}
+			else if (mx >= 60 && mx <= 200 &&
+				my >= 500 && my <= 550)
+			{
+				// BACK
+				currentScreen = 0;
 			}
 		}
 		else if (currentScreen == 3)
 		{
-			// click anywhere on the credits screen to go back
-			currentScreen = 0;
+			// BACK button
+			if (mx >= 60 && mx <= 200 &&
+				my >= 500 && my <= 550)
+			{
+				currentScreen = 0;
+			}
+		}
+		else if (currentScreen == 4)
+		{
+			if (storyPage == 1)
+			{
+				// NEXT button
+				if (mx >= 800 && mx <= 940 &&
+					my >= 500 && my <= 550)
+				{
+					storyPage = 2;
+				}
+			}
+			else if (storyPage == 2)
+			{
+				// BACK button
+				if (mx >= 60 && mx <= 200 &&
+					my >= 500 && my <= 550)
+				{
+					currentScreen = 0;
+					storyPage = 1;
+				}
+			}
 		}
 		else if (currentScreen == 1)
 		{
+			// Level 1 mouse controls
 			level1Mouse(button, state, mx, my);
 		}
 	}
 }
+
 
 // Special Keys:
 // GLUT_KEY_F1, GLUT_KEY_F2, GLUT_KEY_F3, GLUT_KEY_F4, GLUT_KEY_F5, GLUT_KEY_F6, GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11, GLUT_KEY_F12, 
@@ -140,20 +193,14 @@ void iMouse(int button, int state, int mx, int my)
 
 void fixedUpdate()
 {
-	// ==========================================
-	// LEVEL 1 UPDATE
-	// ==========================================
-
+	// Runs the level 1 game loop while that screen is active
 	if (currentScreen == 1)
 	{
 		level1Update();
 	}
 
 
-	// ==========================================
-	// EXISTING KEYBOARD CONTROLS
-	// ==========================================
-
+	// Free-roam WASD/arrow controls (used outside level 1)
 	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP))
 	{
 		y++;
@@ -175,20 +222,14 @@ void fixedUpdate()
 	}
 
 
-	// ==========================================
-	// ENTER
-	// ==========================================
-
+	// Enter advances from the title screen to the main menu buttons
 	if (isKeyPressed('\r'))
 	{
 		menuScreen = 1;
 	}
 
 
-	// ==========================================
-	// SPACE - GAME OVER SOUND
-	// ==========================================
-
+	// Space is just a quick way to preview the game-over sound
 	if (isKeyPressed(' '))
 	{
 		mciSendString(
@@ -203,7 +244,7 @@ void fixedUpdate()
 int main()
 {
 	// Opening/Loading the audio files
-	mciSendString("open \"Audios//background.mp3\" alias bgsong", NULL, 0, NULL);
+	mciSendString("open \"Audios//villain.mp3\" alias bgsong", NULL, 0, NULL);
 	mciSendString("open \"Audios//gameover.mp3\" alias ggsong", NULL, 0, NULL);
 
 	// Playing the background audio on repeat
@@ -216,6 +257,7 @@ int main()
 
 	iInitialize(1000, 600, "The Last Trial");
 	initMenu();
+	iSetTimer(15, updateCharacterAnimation);
 	iStart();
 	return 0;
 }
