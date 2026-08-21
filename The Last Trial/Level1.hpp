@@ -28,11 +28,6 @@
 #define BOARD_WIDTH  GRID_WIDTH
 #define BOARD_HEIGHT GRID_HEIGHT
 
-#define TILE_WIDTH  (BOARD_WIDTH / COLS)
-#define TILE_HEIGHT (BOARD_HEIGHT / ROWS)
-
-// Helpers to convert a row/col into exact pixel boundaries,
-// so tiles line up perfectly even if the grid size changes later.
 
 int getTileLeft(int col)
 {
@@ -94,20 +89,13 @@ int getTileCenterY(int row)
 #define BOT_MOVE_INTERVAL_MIN 0.5
 #define BOT_MOVE_INTERVAL_MAX 1.3
 
-#define BOT_MAX_TARGET_DISTANCE 3
+#define BOT_MAX_TARGET_DISTANCE 6
 #define BOT_MAX_TRAVEL_SECONDS 4.0
 
-#define BOT_SMART_CHANCE_DEFAULT 80
+#define BOT_SMART_CHANCE_DEFAULT 90
 
 #define TILE_HIDDEN_DURATION 3.0
 
-// Difficulty levels, picked from the level-select screen
-#define DIFFICULTY_EASY 0
-#define DIFFICULTY_MEDIUM 1
-#define DIFFICULTY_HARD 2
-
-// Values actually used by the running round. Set by setLevel1Difficulty().
-int level1Difficulty = DIFFICULTY_EASY;
 int currentRedChance = RED_TILE_CHANCE_DEFAULT;
 int currentGreenChance = GREEN_TILE_CHANCE_DEFAULT;
 double currentTileVisibleDuration = TILE_VISIBLE_DURATION_DEFAULT;
@@ -116,47 +104,7 @@ int currentBotSmartChance = BOT_SMART_CHANCE_DEFAULT;
 
 int level1Round = 1;
 
-
-void setLevel1Difficulty(int difficulty)
-{
-	level1Difficulty = difficulty;
-
-	if (difficulty == DIFFICULTY_EASY)
-	{
-		currentRedChance = 10;
-		currentGreenChance = 20;
-		currentTileVisibleDuration = 2.4;
-		currentGameTime = 35;
-		currentBotSmartChance = 60;
-	}
-	else if (difficulty == DIFFICULTY_HARD)
-	{
-		currentRedChance = 22;
-		currentGreenChance = 12;
-		currentTileVisibleDuration = 1.1;
-		currentGameTime = 24;
-		currentBotSmartChance = 92;
-	}
-	else // DIFFICULTY_MEDIUM
-	{
-		currentRedChance = 15;
-		currentGreenChance = 16;
-		currentTileVisibleDuration = 1.7;
-		currentGameTime = 28;
-		currentBotSmartChance = 80;
-	}
-	currentGameTime = 50;
-}
-
-const char *level1DifficultyName()
-{
-	if (level1Difficulty == DIFFICULTY_EASY) return "EASY";
-	if (level1Difficulty == DIFFICULTY_HARD) return "HARD";
-	return "MEDIUM";
-}
-
-
-void startLevel1(int difficulty = DIFFICULTY_EASY);
+void startLevel1();
 
 // Why the round ended, used to pick the right overlay/image
 #define RESULT_NONE 0
@@ -167,7 +115,6 @@ void startLevel1(int difficulty = DIFFICULTY_EASY);
 #define RESULT_DRAW_TIME_UP 5
 
 // One player or bot on the board
-
 struct Player
 {
 	int x;
@@ -191,8 +138,6 @@ struct Player
 	bool isBot;
 	clock_t botTimer;
 
-	double nextDecisionDelay;
-
 	int prevRow;
 	int prevCol;
 	int pathRow[ROWS * COLS];
@@ -201,7 +146,6 @@ struct Player
 	int pathIdx;
 	int pathDestRow, pathDestCol;
 	clock_t pathStartClock;
-	bool stepIsFinal;
 	bool destChosen;
 };
 
@@ -223,13 +167,7 @@ int playerImg[4][2];
 int botImg[BOT_COUNT][4][2];
 
 int gameOverImage;
-bool gameOverImageAvailable = false;
-
 int victoryImage;
-bool victoryImageAvailable = false;
-
-int drawImage;
-bool drawImageAvailable = false;
 
 // Round state
 
@@ -238,8 +176,6 @@ int level1GameOver = 0;
 int level1Time = GAME_TIME_DEFAULT;
 
 bool level1TimerStarted = false;
-
-clock_t level1TimerStart;
 
 
 clock_t tileTimerStart;
@@ -250,12 +186,12 @@ clock_t playerAnimTimerStart;
 
 int level1Result = RESULT_NONE;
 
-int playerSteps = 0;
-
 // phase ends.
 clock_t roundStartClock;
 
-int level1TimeTakenSeconds = 0;
+double level1PlayElapsedSeconds = 0.0;
+clock_t level1PlaySegmentStart;
+bool level1PlayTimerRunning = false;
 
 int backBtnX = 0;
 int backBtnY = 0;
@@ -263,24 +199,6 @@ int backBtnW = 0;
 int backBtnH = 0;
 
 extern int currentScreen;
-
-// Returns true if the given file exists and can be opened for reading.
-// Used to gracefully skip loading art assets that haven't been added yet.
-
-bool fileExists(const char *path)
-{
-	FILE *file = NULL;
-
-	fopen_s(&file, path, "rb");
-
-	if (file != NULL)
-	{
-		fclose(file);
-		return true;
-	}
-
-	return false;
-}
 
 // Advances the walking animation frame for the player and every bot
 
@@ -381,29 +299,8 @@ void initLevel1()
 	botImg[1][DIR_RIGHT][0] = iLoadImage("Image//bot2_walk_right_1.png");
 	botImg[1][DIR_RIGHT][1] = iLoadImage("Image//bot2_walk_right_2.png");
 
-	// End-of-round art is optional - drop these two files into the
-	// Image folder whenever they're ready and they'll start showing
-	// up automatically, no code changes needed.
-	gameOverImageAvailable = fileExists("Image//gameover_screen.png");
-
-	if (gameOverImageAvailable)
-	{
-		gameOverImage = iLoadImage("Image//gameover_screen.png");
-	}
-
-	victoryImageAvailable = fileExists("Image//victory_screen.png");
-
-	if (victoryImageAvailable)
-	{
-		victoryImage = iLoadImage("Image//victory_screen.png");
-	}
-
-	drawImageAvailable = fileExists("Image//draw_screen.png");
-
-	if (drawImageAvailable)
-	{
-		drawImage = iLoadImage("Image//draw_screen.png");
-	}
+	gameOverImage = iLoadImage("Image//Game Over.png");
+	victoryImage = iLoadImage("Image//Win.png");
 }
 
 // Resets one character (player or bot) to a starting tile
@@ -446,13 +343,7 @@ void initializeCharacter(
 	p.pathDestRow = row;
 	p.pathDestCol = col;
 	p.pathStartClock = clock();
-	p.stepIsFinal = true;
 	p.destChosen = false;
-
-	p.nextDecisionDelay =
-		BOT_MOVE_INTERVAL_MIN +
-		((double)(rand() % 100) / 100.0) *
-		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
 }
 
 // Places the player and both bots on their starting tiles
@@ -736,37 +627,6 @@ bool moveCharacterToTile(
 	return true;
 }
 
-
-void computeTimeTaken()
-{
-	if (level1TimerStarted)
-	{
-		double elapsed =
-			(double)(clock() - level1TimerStart)
-			/ CLOCKS_PER_SEC;
-
-		int seconds = (int)elapsed;
-
-		if (seconds < 0)
-		{
-			seconds = 0;
-		}
-
-		if (seconds > currentGameTime)
-		{
-			seconds = currentGameTime;
-		}
-
-		level1TimeTakenSeconds = seconds;
-	}
-	else
-	{
-		level1TimeTakenSeconds = 0;
-	}
-}
-
-
-
 void checkCharacterTile(Player &p)
 {
 	if (tiles[p.row][p.col] == RED)
@@ -785,10 +645,7 @@ void checkCharacterTile(Player &p)
 		}
 
 		p.alive = false;
-
 		level1GameOver = 1;
-
-		computeTimeTaken();
 		if (p.isBot)
 		{
 			level1Result = RESULT_WIN_BOT_DIED;
@@ -858,11 +715,6 @@ void updateCharacter(Player &p)
 		p.row = p.targetRow;
 		p.col = p.targetCol;
 
-		if (!p.isBot)
-		{
-			playerSteps++;
-		}
-
 		checkCharacterTile(p);
 	}
 }
@@ -885,12 +737,26 @@ void updateTileVisibility()
 			}
 
 			tileTimerStart = clock();
+			level1PlaySegmentStart = clock();
+			level1PlayTimerRunning = true;
+			level1TimerStarted = true;
 		}
 	}
 	else
 	{
 		if (elapsed >= TILE_HIDDEN_DURATION)
 		{
+
+			if (level1PlayTimerRunning)
+			{
+				double segmentElapsed =
+					(double)(clock() - level1PlaySegmentStart)
+					/ CLOCKS_PER_SEC;
+
+				level1PlayElapsedSeconds += segmentElapsed;
+				level1PlayTimerRunning = false;
+			}
+
 			generateTiles();
 
 			level1Round++;
@@ -900,7 +766,6 @@ void updateTileVisibility()
 		}
 	}
 }
-
 void updateLevel1Timer()
 {
 	if (!level1TimerStarted)
@@ -913,12 +778,17 @@ void updateLevel1Timer()
 		return;
 	}
 
-	double elapsed =
-		(double)(clock() - level1TimerStart)
-		/ CLOCKS_PER_SEC;
+	double totalElapsed = level1PlayElapsedSeconds;
+
+	if (level1PlayTimerRunning)
+	{
+		totalElapsed +=
+			(double)(clock() - level1PlaySegmentStart)
+			/ CLOCKS_PER_SEC;
+	}
 
 	int remaining =
-		currentGameTime - (int)elapsed;
+		currentGameTime - (int)totalElapsed;
 
 	if (remaining < 0)
 	{
@@ -932,9 +802,6 @@ void updateLevel1Timer()
 		level1Time = 0;
 
 		level1GameOver = 1;
-
-		computeTimeTaken();
-
 		int bestBotScore = 0;
 
 		for (int i = 0; i < BOT_COUNT; i++)
@@ -1205,8 +1072,7 @@ void drawHUD()
 
 void drawPhasePrompt()
 {
-	// iText on this library takes a plain char*, not const char* -
-	// keeping these non-const avoids a C2664 compile error.
+	
 	char *text;
 
 	if (tilesVisible)
@@ -1228,456 +1094,46 @@ void drawPhasePrompt()
 		);
 }
 
-
-void drawScoreboard()
-{
-	int boxX = 250;
-	int boxY = 420;
-	int boxWidth = 500;
-	int boxHeight = 140;
-
-	iSetColor(8, 8, 8);
-
-	iFilledRectangle(
-		boxX,
-		boxY,
-		boxWidth,
-		boxHeight
-		);
-
-	iSetColor(5, 5, 5);
-
-	iRectangle(
-		boxX,
-		boxY,
-		boxWidth,
-		boxHeight
-		);
-
-	iRectangle(
-		boxX - 1,
-		boxY - 1,
-		boxWidth + 2,
-		boxHeight + 2
-		);
-
-	iSetColor(200, 170, 60);
-
-	iText(
-		boxX + 155,
-		boxY + 115,
-		"TILES COLLECTED",
-		GLUT_BITMAP_9_BY_15
-		);
-
-	char line[64];
-
-	iSetColor(255, 255, 255);
-
-	sprintf_s(line, sizeof(line), "You: %d", player.score);
-
-	iText(
-		boxX + 45,
-		boxY + 75,
-		line,
-		GLUT_BITMAP_9_BY_15
-		);
-
-	sprintf_s(line, sizeof(line), "Bot 1: %d", bots[0].score);
-
-	iText(
-		boxX + 205,
-		boxY + 75,
-		line,
-		GLUT_BITMAP_9_BY_15
-		);
-
-	sprintf_s(line, sizeof(line), "Bot 2: %d", bots[1].score);
-
-	iText(
-		boxX + 365,
-		boxY + 75,
-		line,
-		GLUT_BITMAP_9_BY_15
-		);
-
-	int bestBotScore = bots[0].score;
-
-	if (bots[1].score > bestBotScore)
-	{
-		bestBotScore = bots[1].score;
-	}
-
-	char *standingText;
-
-	if (player.score > bestBotScore)
-	{
-		standingText = "YOU COLLECTED THE MOST TILES";
-	}
-	else if (player.score == bestBotScore)
-	{
-		standingText = "IT'S A TIE ON TILES COLLECTED";
-	}
-	else
-	{
-		standingText = "A BOT COLLECTED THE MOST TILES";
-	}
-
-	iSetColor(180, 220, 255);
-
-	iText(
-		boxX + 100,
-		boxY + 35,
-		standingText,
-		GLUT_BITMAP_8_BY_13
-		);
-}
-
-
-void drawChamferedGlowBox(
-	int x, int y, int w, int h, int chamfer,
-	int bgR, int bgG, int bgB,
-	int accentR, int accentG, int accentB
-	)
-{
-	double px[8], py[8];
-
-	px[0] = x + chamfer;	py[0] = y;
-	px[1] = x + w - chamfer;	py[1] = y;
-	px[2] = x + w;	py[2] = y + chamfer;
-	px[3] = x + w;	py[3] = y + h - chamfer;
-	px[4] = x + w - chamfer;	py[4] = y + h;
-	px[5] = x + chamfer;	py[5] = y + h;
-	px[6] = x;	py[6] = y + h - chamfer;
-	px[7] = x;	py[7] = y + chamfer;
-
-	iSetColor(bgR, bgG, bgB);
-	iFilledPolygon(px, py, 8);
-
-	iSetColor(bgR + 6, bgG + 6, bgB + 6);
-
-	for (int scanY = y + 6; scanY < y + h - 6; scanY += 5)
-	{
-		iLine(x + chamfer / 2, scanY, x + w - chamfer / 2, scanY);
-	}
-	for (int pass = 0; pass < 5; pass++)
-	{
-		int inset = 5 - pass;
-
-		double scale[5] = { 0.25, 0.45, 0.70, 1.0, 1.0 };
-
-		int lr = (int)(accentR * scale[pass]);
-		int lg = (int)(accentG * scale[pass]);
-		int lb = (int)(accentB * scale[pass]);
-
-		double ox[8], oy[8];
-
-		ox[0] = x + chamfer;	oy[0] = y - inset;
-		ox[1] = x + w - chamfer;	oy[1] = y - inset;
-		ox[2] = x + w + inset;	oy[2] = y + chamfer;
-		ox[3] = x + w + inset;	oy[3] = y + h - chamfer;
-		ox[4] = x + w - chamfer;	oy[4] = y + h + inset;
-		ox[5] = x + chamfer;	oy[5] = y + h + inset;
-		ox[6] = x - inset;	oy[6] = y + h - chamfer;
-		ox[7] = x - inset;	oy[7] = y + chamfer;
-
-		iSetColor(lr, lg, lb);
-		iPolygon(ox, oy, 8);
-	}
-
-	// Bright accent ticks at each corner, sitting just outside the
-	// chamfer cut - the small double-line marks from the reference art
-	iSetColor(accentR, accentG, accentB);
-
-	int tickLen = 26;
-	int tickThick = 3;
-
-	// Top-left
-	iFilledRectangle(x - 2, y + h - 4, tickLen, tickThick);
-	iFilledRectangle(x - 2, y + h - tickLen - 2, tickThick, tickLen);
-
-	// Top-right
-	iFilledRectangle(x + w + 2 - tickLen, y + h - 4, tickLen, tickThick);
-	iFilledRectangle(x + w - 1, y + h - tickLen - 2, tickThick, tickLen);
-
-	// Bottom-left
-	iFilledRectangle(x - 2, y + 1, tickLen, tickThick);
-	iFilledRectangle(x - 2, y + 2, tickThick, tickLen);
-
-	// Bottom-right
-	iFilledRectangle(x + w + 2 - tickLen, y + 1, tickLen, tickThick);
-	iFilledRectangle(x + w - 1, y + 2, tickThick, tickLen);
-}
-
-// A row of short dashes instead of one solid line - reads a bit more
-// like a digital terminal divider than a plain rule.
-
-void drawDashedLine(
-	int x1, int y, int x2,
-	int accentR, int accentG, int accentB
-	)
-{
-	iSetColor(accentR, accentG, accentB);
-
-	int dashLen = 10;
-	int gapLen = 7;
-
-	for (int px = x1; px < x2; px += dashLen + gapLen)
-	{
-		int segEnd = px + dashLen;
-
-		if (segEnd > x2)
-		{
-			segEnd = x2;
-		}
-
-		iLine(px, y, segEnd, y);
-	}
-}
-
-void drawGameOver()
+void drawEndScreen()
 {
 	bool won =
 		(level1Result == RESULT_WIN_BOT_DIED) ||
 		(level1Result == RESULT_WIN_TIME_UP);
 
-	// Win reads cyan-green, loss reads red - same panel design, but the
-	// color itself now tells you the outcome at a glance instead of
-	// everything always being red.
-	int accentR, accentG, accentB;
+	int img = won ? victoryImage : gameOverImage;
 
-	if (won)
-	{
-		accentR = 70;
-		accentG = 235;
-		accentB = 170;
-	}
-	else
-	{
-		accentR = 255;
-		accentG = 70;
-		accentB = 70;
-	}
+	int dispW = won ? 620 : 560;
+	int dispH = won ? (int)(dispW * 793.0 / 1983.0)
+		: (int)(dispW * 941.0 / 1672.0);
 
-	int boxWidth = 580;
-	int boxHeight = 460;
+	int x = (LEVEL1_WIDTH - dispW) / 2;
+	int y = (LEVEL1_HEIGHT - dispH) / 2 + 20;
 
-	int boxX = (LEVEL1_WIDTH - boxWidth) / 2;
-	int boxY = (LEVEL1_HEIGHT - boxHeight) / 2;
+	iShowImage(x, y, dispW, dispH, img);
 
-	drawChamferedGlowBox(
-		boxX, boxY, boxWidth, boxHeight, 34,
-		8, 8, 8,
-		accentR, accentG, accentB
-		);
-
-	int centerX = boxX + boxWidth / 2;
-
-	// Small kicker line above the title, like a terminal log header
-	iSetColor(
-		(int)(accentR * 0.6),
-		(int)(accentG * 0.6),
-		(int)(accentB * 0.6)
-		);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 48,
-		won ? "// TRIAL STATUS: CLEARED" : "// TRIAL STATUS: TERMINATED",
-		GLUT_BITMAP_8_BY_13
-		);
-
-	// Status indicator - a glowing dot in the top-left of the panel,
-	// same idea as a status LED on a control panel
-	int dotX = boxX + 46;
-	int dotY = boxY + boxHeight - 46;
-
-	iSetColor((int)(accentR * 0.3), (int)(accentG * 0.3), (int)(accentB * 0.3));
-	iCircle(dotX, dotY, 11);
-
-	iSetColor((int)(accentR * 0.6), (int)(accentG * 0.6), (int)(accentB * 0.6));
-	iCircle(dotX, dotY, 7);
-
-	iSetColor(accentR, accentG, accentB);
-	iFilledCircle(dotX, dotY, 4);
-
-	char *bigTitle;
-	char *subTitle;
-
-	if (won)
-	{
-		bigTitle = "CONGRATS";
-		subTitle = "YOU SURVIVED";
-	}
-	else
-	{
-		bigTitle = "FAILED";
-		subTitle = "YOU HAVE BEEN FAILED TO SURVIVE";
-	}
-
-	iSetColor(accentR, accentG, accentB);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 90,
-		bigTitle,
-		GLUT_BITMAP_TIMES_ROMAN_24
-		);
-
-	iSetColor(225, 225, 225);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 123,
-		subTitle,
-		GLUT_BITMAP_9_BY_15
-		);
-
-	drawDashedLine(
-		boxX + 50,
-		boxY + boxHeight - 150,
-		boxX + boxWidth - 50,
-		(int)(accentR * 0.45), (int)(accentG * 0.45), (int)(accentB * 0.45)
-		);
-
-	// TIME TAKEN
-	iSetColor(200, 190, 120);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 190,
-		"TIME TAKEN",
-		GLUT_BITMAP_8_BY_13
-		);
-
-	char timeTakenText[32];
-
-	sprintf_s(
-		timeTakenText,
-		sizeof(timeTakenText),
-		"%d SEC",
-		level1TimeTakenSeconds
-		);
-
-	iSetColor(255, 255, 255);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 223,
-		timeTakenText,
-		GLUT_BITMAP_TIMES_ROMAN_24
-		);
-
-	drawDashedLine(
-		boxX + 50,
-		boxY + boxHeight - 250,
-		boxX + boxWidth - 50,
-		(int)(accentR * 0.45), (int)(accentG * 0.45), (int)(accentB * 0.45)
-		);
-
-	// GREEN TILES COLLECTED - broken down by who collected what,
-	// exactly like the live corner HUD but bigger, plain text only
-	// (no cross/trophy icon of any kind)
-	iSetColor(200, 190, 120);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 290,
-		"GREEN TILES COLLECTED",
-		GLUT_BITMAP_8_BY_13
-		);
-
-	char greenBreakdownText[64];
-
-	sprintf_s(
-		greenBreakdownText,
-		sizeof(greenBreakdownText),
-		"YOU %d    BOT1 %d    BOT2 %d",
-		player.score,
-		bots[0].score,
-		bots[1].score
-		);
-
-	iSetColor(255, 255, 255);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 320,
-		greenBreakdownText,
-		GLUT_BITMAP_9_BY_15
-		);
-
-	int bestBotScore = bots[0].score;
-
-	if (bots[1].score > bestBotScore)
-	{
-		bestBotScore = bots[1].score;
-	}
-
-	char *standingText;
-
-	if (player.score > bestBotScore)
-	{
-		standingText = "YOU COLLECTED THE MOST GREEN TILES";
-	}
-	else if (player.score == bestBotScore)
-	{
-		standingText = "TIED WITH A BOT ON GREEN TILES";
-	}
-	else
-	{
-		standingText = "A BOT COLLECTED THE MOST GREEN TILES";
-	}
-
-	iSetColor(190, 190, 190);
-
-	iTextCentered(
-		centerX,
-		boxY + boxHeight - 347,
-		standingText,
-		GLUT_BITMAP_8_BY_13
-		);
-
-	// BACK button - takes the player straight to the level-select
-	// screen instead of restarting the same round.
 	int btnWidth = 220;
 	int btnHeight = 48;
+	int btnX = (LEVEL1_WIDTH - btnWidth) / 2;
+	int btnY = y - btnHeight - 20;
 
-	int btnX = centerX - btnWidth / 2;
-	int btnY = boxY + 34;
-
-	iSetColor(
-		(int)(accentR * 0.14),
-		(int)(accentG * 0.14),
-		(int)(accentB * 0.14)
-		);
-
+	iSetColor(20, 20, 20);
 	iFilledRectangle(btnX, btnY, btnWidth, btnHeight);
 
-	iSetColor(accentR, accentG, accentB);
-
-	iRectangle(btnX, btnY, btnWidth, btnHeight);
-	iRectangle(btnX - 1, btnY - 1, btnWidth + 2, btnHeight + 2);
-
 	iSetColor(255, 255, 255);
+	iRectangle(btnX, btnY, btnWidth, btnHeight);
 
 	iTextCentered(
-		centerX,
+		btnX + btnWidth / 2,
 		btnY + btnHeight / 2 - 6,
 		"< BACK TO LEVELS",
 		GLUT_BITMAP_9_BY_15
 		);
 
-	// Keep these current every frame so level1Mouse can hit-test clicks
-	// against exactly where the button is actually drawn.
 	backBtnX = btnX;
 	backBtnY = btnY;
 	backBtnW = btnWidth;
 	backBtnH = btnHeight;
 }
-
-// Draws everything that makes up the level 1 screen
-
 void drawLevel1()
 {
 	iShowImage(
@@ -1699,17 +1155,16 @@ void drawLevel1()
 		drawCharacter(bots[i], i);
 	}
 
+	drawHUD();
+
 	if (!level1GameOver)
 	{
-		drawHUD();
-
 		drawPhasePrompt();
 	}
 
 	if (level1GameOver)
 	{
-		drawGameOver();
-		drawScoreboard();
+		drawEndScreen();
 	}
 }
 
@@ -1738,11 +1193,9 @@ void movePlayerToTile(int row, int col)
 
 		int nextRow = player.pathRow[player.pathIdx];
 		int nextCol = player.pathCol[player.pathIdx];
-		bool isFinalStep = (player.pathIdx == player.pathLen - 1);
-
+		
 		if (moveCharacterToTile(player, nextRow, nextCol))
 		{
-			player.stepIsFinal = isFinalStep;
 			player.pathIdx++;
 			return;
 		}
@@ -1761,64 +1214,73 @@ void movePlayerToTile(int row, int col)
 		}
 	}
 
-void botChooseDestination(Player &bot)
-{
-	if (!bot.alive) return;
-	int destRow = -1, destCol = -1;
-	int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen = -1;
-
-	if (rand() % 100 < currentBotSmartChance)
+	void botChooseDestination(Player &bot)
 	{
-		for (int r = 0; r < ROWS; r++)
-		for (int c = 0; c < COLS; c++)
+		if (!bot.alive) return;
+
+		double sinceRoundStart =
+			(double)(clock() - roundStartClock) / CLOCKS_PER_SEC;
+		bool botMustAvoidRed = sinceRoundStart < BOT_RED_IMMUNITY_SECONDS;
+
+		int destRow = -1, destCol = -1;
+		int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen = -1;
+
+		if (rand() % 100 < currentBotSmartChance)
 		{
-			if (tiles[r][c] != GREEN || tileClaimed[r][c]) continue;
-			int tRow[ROWS * COLS], tCol[ROWS * COLS], tLen;
-			if (!findPath(bot.row, bot.col, r, c, tRow, tCol, tLen, &bot)) continue;
-			if (tLen > BOT_MAX_TARGET_DISTANCE) continue;
-			if (outLen == -1 || tLen < outLen)
+			for (int r = 0; r < ROWS; r++)
+			for (int c = 0; c < COLS; c++)
 			{
-				outLen = tLen;
-				for (int i = 0; i < tLen; i++) { outRow[i] = tRow[i]; outCol[i] = tCol[i]; }
-				destRow = r; destCol = c;
+				if (tiles[r][c] != GREEN || tileClaimed[r][c]) continue;
+				int tRow[ROWS * COLS], tCol[ROWS * COLS], tLen;
+				if (!findPath(bot.row, bot.col, r, c, tRow, tCol, tLen, &bot)) continue;
+				if (tLen > BOT_MAX_TARGET_DISTANCE) continue;
+				if (outLen == -1 || tLen < outLen)
+				{
+					outLen = tLen;
+					for (int i = 0; i < tLen; i++) { outRow[i] = tRow[i]; outCol[i] = tCol[i]; }
+					destRow = r; destCol = c;
+				}
 			}
 		}
-	}
 
-	if (destRow == -1)
-	{
-		int pr[4] = { bot.row + 1, bot.row - 1, bot.row, bot.row };
-		int pc[4] = { bot.col, bot.col, bot.col - 1, bot.col + 1 };
-		int vr[4], vc[4], vCount = 0;
-
-		for (int i = 0; i < 4; i++)
-		if (isValidTile(pr[i], pc[i], &bot) && !(pr[i] == bot.prevRow && pc[i] == bot.prevCol))
+		if (destRow == -1)
 		{
-			vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
+			int pr[4] = { bot.row + 1, bot.row - 1, bot.row, bot.row };
+			int pc[4] = { bot.col, bot.col, bot.col - 1, bot.col + 1 };
+			int vr[4], vc[4], vCount = 0;
+
+			for (int i = 0; i < 4; i++)
+			{
+				if (!isValidTile(pr[i], pc[i], &bot)) continue;
+				if (botMustAvoidRed && tiles[pr[i]][pc[i]] == RED) continue;
+				if (pr[i] == bot.prevRow && pc[i] == bot.prevCol) continue;
+
+				vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
+			}
+
+			if (vCount == 0)
+			for (int i = 0; i < 4; i++)
+			{
+				if (!isValidTile(pr[i], pc[i], &bot)) continue;
+				if (botMustAvoidRed && tiles[pr[i]][pc[i]] == RED) continue;
+
+				vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
+			}
+
+			if (vCount == 0) return;
+
+			int pick = rand() % vCount;
+			destRow = vr[pick]; destCol = vc[pick];
+			if (!findPath(bot.row, bot.col, destRow, destCol, outRow, outCol, outLen, &bot)) return;
 		}
 
-		if (vCount == 0)
-		for (int i = 0; i < 4; i++)
-		if (isValidTile(pr[i], pc[i], &bot))
-		{
-			vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
-		}
-
-		if (vCount == 0) return;
-
-		int pick = rand() % vCount;
-		destRow = vr[pick]; destCol = vc[pick];
-		if (!findPath(bot.row, bot.col, destRow, destCol, outRow, outCol, outLen, &bot)) return;
+		for (int i = 0; i < outLen; i++) { bot.pathRow[i] = outRow[i]; bot.pathCol[i] = outCol[i]; }
+		bot.pathLen = outLen;
+		bot.pathIdx = 0;
+		bot.pathDestRow = destRow;
+		bot.pathDestCol = destCol;
+		bot.pathStartClock = clock();
 	}
-
-	for (int i = 0; i < outLen; i++) { bot.pathRow[i] = outRow[i]; bot.pathCol[i] = outCol[i]; }
-	bot.pathLen = outLen;
-	bot.pathIdx = 0;
-	bot.pathDestRow = destRow;
-	bot.pathDestCol = destCol;
-	bot.pathStartClock = clock();
-}
-
 void updateBotPath(Player &bot)
 {
 	if (!bot.alive) return;
@@ -1858,7 +1320,6 @@ void updateBots()
 	}
 }
 
-// Handles clicks on the board during level 1
 
 void level1Mouse(
 	int button,
@@ -1893,7 +1354,6 @@ void level1Mouse(
 		return;
 	}
 
-	// Can't move while still memorizing the tile layout
 	if (tilesVisible)
 	{
 		return;
@@ -1959,7 +1419,7 @@ void level1Update()
 }
 
 
-void startLevel1(int difficulty)
+void startLevel1()
 {
 	srand(
 		(unsigned int)(
@@ -1967,10 +1427,7 @@ void startLevel1(int difficulty)
 		)
 		);
 
-	setLevel1Difficulty(difficulty);
-
 	initLevel1();
-
 	initializePlayers();
 
 	generateTiles();
@@ -1991,11 +1448,10 @@ void startLevel1(int difficulty)
 
 	playerAnimTimerStart = clock();
 
-	playerSteps = 0;
-
-	level1TimeTakenSeconds = 0;
-
 	roundStartClock = clock();
+    level1PlayElapsedSeconds = 0.0;
+	level1PlayTimerRunning = false;
 }
+	
 
 #endif
