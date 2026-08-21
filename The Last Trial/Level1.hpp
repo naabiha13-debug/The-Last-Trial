@@ -75,10 +75,7 @@ int getTileCenterY(int row)
 #define RED 1
 #define GREEN 2
 
-// Base/default values - actual values used in a round come from the
-// difficulty-scaled variables below (see setLevel1Difficulty), so the
-// three levels genuinely play differently instead of being the same
-// board with a different label.
+
 #define RED_TILE_CHANCE_DEFAULT 15
 #define GREEN_TILE_CHANCE_DEFAULT 15
 
@@ -87,11 +84,6 @@ int getTileCenterY(int row)
 #define BOT_COUNT 2
 
 #define GAME_TIME_DEFAULT 50
-
-// For this many seconds after a round starts, a bot is guaranteed to
-// never die on a red tile (it can still happen to land on one and
-// get bounced back safely). After this window, red tiles are
-// dangerous for bots again, exactly like before.
 #define BOT_RED_IMMUNITY_SECONDS 35.0
 
 #define TILE_VISIBLE_DURATION_DEFAULT 2.0
@@ -102,9 +94,9 @@ int getTileCenterY(int row)
 #define BOT_MOVE_INTERVAL_MIN 0.5
 #define BOT_MOVE_INTERVAL_MAX 1.3
 
-// Chance (out of 100) that a bot picks a good/green tile instead of
-// a random valid one. Kept below 100 on purpose so the bot still
-// feels beatable and the round stays competitive with the player.
+#define BOT_MAX_TARGET_DISTANCE 3
+#define BOT_MAX_TRAVEL_SECONDS 4.0
+
 #define BOT_SMART_CHANCE_DEFAULT 80
 
 #define TILE_HIDDEN_DURATION 3.0
@@ -122,16 +114,9 @@ double currentTileVisibleDuration = TILE_VISIBLE_DURATION_DEFAULT;
 int currentGameTime = GAME_TIME_DEFAULT;
 int currentBotSmartChance = BOT_SMART_CHANCE_DEFAULT;
 
-// How many memorize/hide cycles have happened so far this round -
-// shown on the HUD so the player can feel the round actually
-// progressing instead of it looking like the same static screen.
 int level1Round = 1;
 
-// Picks the tile chances / timings / bot skill for the chosen
-// difficulty. Easy is forgiving (slower, more green tiles, dumber
-// bots); Hard is tight and punishing (fast reveal, fewer green
-// tiles, sharp bots) - so Level 1/2/3 are meaningfully different
-// rounds, not the same level with a different button.
+
 void setLevel1Difficulty(int difficulty)
 {
 	level1Difficulty = difficulty;
@@ -160,9 +145,6 @@ void setLevel1Difficulty(int difficulty)
 		currentGameTime = 28;
 		currentBotSmartChance = 80;
 	}
-
-	// The round clock is fixed at 50 seconds for every difficulty -
-	// only the tile timing / bot skill above change with difficulty.
 	currentGameTime = 50;
 }
 
@@ -173,8 +155,7 @@ const char *level1DifficultyName()
 	return "MEDIUM";
 }
 
-// Forward declaration - startLevel1() is defined at the bottom of this
-// file, but level1Mouse() (defined earlier) needs it available.
+
 void startLevel1(int difficulty = DIFFICULTY_EASY);
 
 // Why the round ended, used to pick the right overlay/image
@@ -208,23 +189,20 @@ struct Player
 	int score;
 
 	bool isBot;
-
-	// Timer used both for the bot's next-move delay and its walk animation
 	clock_t botTimer;
 
 	double nextDecisionDelay;
 
 	int prevRow;
 	int prevCol;
-
-	// Queued path (used by the human player for click-to-move).
-	// When the player clicks a tile that isn't a direct neighbour,
-	// we compute a full route and walk it one tile at a time so the
-	// movement always feels smooth instead of getting "stuck".
 	int pathRow[ROWS * COLS];
 	int pathCol[ROWS * COLS];
 	int pathLen;
 	int pathIdx;
+	int pathDestRow, pathDestCol;
+	clock_t pathStartClock;
+	bool stepIsFinal;
+	bool destChosen;
 };
 
 // The human player and the bots sharing the board with them
@@ -235,10 +213,6 @@ Player bots[BOT_COUNT];
 
 // Tile colors for the current round
 int tiles[ROWS][COLS];
-
-// Once a GREEN (safe) tile has been stepped on, it's locked for the
-// rest of the round - nobody else can move onto it, so player and
-// bots are forced to spread out instead of stacking on one tile.
 bool tileClaimed[ROWS][COLS];
 
 // Loaded textures
@@ -248,9 +222,6 @@ int backgroundImage;
 int playerImg[4][2];
 int botImg[BOT_COUNT][4][2];
 
-// Optional end-of-round artwork. These are only shown if the matching
-// PNG actually exists in the Image folder - until then we fall back
-// to a simple colored panel so the game never looks broken.
 int gameOverImage;
 bool gameOverImageAvailable = false;
 
@@ -270,44 +241,27 @@ bool level1TimerStarted = false;
 
 clock_t level1TimerStart;
 
-// Tile visibility (memorize phase vs hidden phase)
 
 clock_t tileTimerStart;
 
 bool tilesVisible = true;
 
-// Player walk-animation timer
-
 clock_t playerAnimTimerStart;
-
-// Result of the round, set the moment it's decided (see RESULT_* above)
 
 int level1Result = RESULT_NONE;
 
-// Counts every tile the human player has stepped onto this round -
-// shown live on the HUD and again on the end-of-round summary.
 int playerSteps = 0;
 
-// Marks the instant the round actually began (used for the bot's
-// red-tile immunity window and for the "time taken" stat), separate
-// from level1TimerStart which only starts once the first memorize
 // phase ends.
 clock_t roundStartClock;
 
-// How long the round lasted, frozen the moment it ends so the
-// end-of-round box doesn't keep counting after the game is over.
 int level1TimeTakenSeconds = 0;
 
-// Bounds of the BACK TO LEVELS button drawn on the end-of-round box,
-// refreshed every frame it's drawn so clicks can be tested against it.
 int backBtnX = 0;
 int backBtnY = 0;
 int backBtnW = 0;
 int backBtnH = 0;
 
-// Defined in iMain.cpp - which top-level screen is showing (0 = main
-// menu, 1 = this level, 2 = level select, ...). The end-of-round BACK
-// button needs to set this back to the level-select screen.
 extern int currentScreen;
 
 // Returns true if the given file exists and can be opened for reading.
@@ -489,6 +443,11 @@ void initializeCharacter(
 
 	p.pathLen = 0;
 	p.pathIdx = 0;
+	p.pathDestRow = row;
+	p.pathDestCol = col;
+	p.pathStartClock = clock();
+	p.stepIsFinal = true;
+	p.destChosen = false;
 
 	p.nextDecisionDelay =
 		BOT_MOVE_INTERVAL_MIN +
@@ -525,14 +484,6 @@ void initializePlayers()
 		);
 }
 
-// If a character is standing on a tile that just rolled RED, that
-// would kill them the instant the board regenerates - which isn't a
-// fair "gotcha", so we clear it to a neutral WHITE tile instead.
-// Unlike before, we do NOT force it to GREEN: doing that used to eat
-// up most of the round's real green tiles (player + 2 bots = up to 3
-// tiles auto-converted every round, out of only ~3-4 green tiles
-// total), which is why bots kept ending up wandering onto plain
-// tiles - there was rarely a real green tile left to walk to.
 
 void clearRedUnderCharacter(Player &p)
 {
@@ -542,11 +493,6 @@ void clearRedUnderCharacter(Player &p)
 	}
 }
 
-// If a character happens to already be standing on a genuinely
-// rolled GREEN tile, lock it in as claimed for them right away (it
-// was never going to score for them, since they didn't walk onto it
-// this round, but it should still count as theirs so nobody else can
-// swoop in and take it out from under them).
 
 void claimTileIfGreen(Player &p)
 {
@@ -555,10 +501,6 @@ void claimTileIfGreen(Player &p)
 		tileClaimed[p.row][p.col] = true;
 	}
 }
-
-// Rolls a fresh tile layout for the round and clears every tile's
-// "claimed" flag so green tiles become available again
-
 void generateTiles()
 {
 	for (int r = 0; r < ROWS; r++)
@@ -600,41 +542,24 @@ void generateTiles()
 	{
 		claimTileIfGreen(bots[i]);
 	}
-
-	// The layout just changed completely (new memorize phase), so any
-	// route the player had queued up no longer makes sense - clear it.
 	player.pathLen = 0;
 	player.pathIdx = 0;
 }
 
-// True if some other living player/bot is standing on this tile right
-// now. Previously this also blocked a tile the moment someone else
-// merely started heading toward it (their targetRow/targetCol), which
-// meant the player could get blocked from a tile a bot was still a
-// couple of steps away from - including tiles along a route the bot
-// itself was walking. Now it only blocks on the tile someone is
-// actually standing on.
-
 bool isTileOccupied(int row, int col, Player *ignorePlayer)
 {
-	if (
-		&player != ignorePlayer &&
-		player.alive &&
-		player.row == row &&
-		player.col == col
-		)
+	if (&player != ignorePlayer && player.alive &&
+		((player.row == row && player.col == col) ||
+		(player.targetRow == row && player.targetCol == col)))
 	{
 		return true;
 	}
 
 	for (int i = 0; i < BOT_COUNT; i++)
 	{
-		if (
-			&bots[i] != ignorePlayer &&
-			bots[i].alive &&
-			bots[i].row == row &&
-			bots[i].col == col
-			)
+		if (&bots[i] != ignorePlayer && bots[i].alive &&
+			((bots[i].row == row && bots[i].col == col) ||
+			(bots[i].targetRow == row && bots[i].targetCol == col)))
 		{
 			return true;
 		}
@@ -643,12 +568,6 @@ bool isTileOccupied(int row, int col, Player *ignorePlayer)
 	return false;
 }
 
-// True if (row, col) is a legal destination for this character right now:
-// on the board, not a green tile someone already claimed, and not
-// currently occupied by someone else. Red tiles ARE a legal destination
-// on purpose - stepping onto one is what actually triggers the
-// red-tile death in checkCharacterTile(); blocking it here meant red
-// tiles could never be reached at all.
 
 bool isValidTile(int row, int col, Player *p)
 {
@@ -662,14 +581,11 @@ bool isValidTile(int row, int col, Player *p)
 		return false;
 	}
 
-	// A green tile that's already been claimed this round is off-limits
-	// to everyone else, even once its original owner has moved away
 	if (tiles[row][col] == GREEN && tileClaimed[row][col])
 	{
 		return false;
 	}
 
-	// Someone else is already there, or already moving there
 	if (isTileOccupied(row, col, p))
 	{
 		return false;
@@ -678,8 +594,6 @@ bool isValidTile(int row, int col, Player *p)
 	return true;
 }
 
-// True if the two tiles are directly next to each other (no diagonals,
-// no skipping over a tile in between)
 
 bool isAdjacent(
 	int fromRow,
@@ -703,16 +617,7 @@ bool isAdjacent(
 	return false;
 }
 
-// True if (row, col) is a tile a path is allowed to pass THROUGH -
-// same rules as isValidTile but ignoring live occupancy, since
-// bots/player keep moving while a path is being planned/walked.
-// Occupancy is re-checked for real at the moment each step is taken.
-// Red tiles are excluded here on purpose: they should never be used as
-// a shortcut to hop across to somewhere else. They're still allowed as
-// the actual final destination - see findPath(), which lets a route
-// end on a red tile without ever routing through one.
-
-bool isPathTileOpen(int row, int col)
+bool isPathTileOpen(int row, int col, Player *ignorePlayer)
 {
 	if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
 	{
@@ -729,159 +634,68 @@ bool isPathTileOpen(int row, int col)
 		return false;
 	}
 
-	return true;
-}
-
-// Finds the shortest route (through open tiles only) from
-// (startRow, startCol) to (destRow, destCol) using a breadth-first
-// search over the small board grid. Fills outRow/outCol with the
-// step-by-step tiles to walk through (not including the start tile)
-// and outLen with how many steps that is. Returns false if there's
-// no valid route at all.
-
-bool findPath(
-	int startRow,
-	int startCol,
-	int destRow,
-	int destCol,
-	int outRow[ROWS * COLS],
-	int outCol[ROWS * COLS],
-	int &outLen
-	)
-{
-	if (startRow == destRow && startCol == destCol)
-	{
-		outLen = 0;
-		return true;
-	}
-
-	// The destination itself is allowed to be a red tile (stepping onto
-	// it is a legal, if fatal, move) - it just can't be a tile the
-	// route passes through on the way to somewhere else.
-	bool destIsRed = (tiles[destRow][destCol] == RED);
-
-	if (!destIsRed && !isPathTileOpen(destRow, destCol))
+	if (isTileOccupied(row, col, ignorePlayer))
 	{
 		return false;
 	}
+
+	return true;
+}
+bool findPath(int startRow, int startCol, int destRow, int destCol,
+	int outRow[ROWS * COLS], int outCol[ROWS * COLS], int &outLen, Player *p)
+{
+	if (startRow == destRow && startCol == destCol) { outLen = 0; return true; }
+	bool destIsRed = (tiles[destRow][destCol] == RED);
+	if (!destIsRed && !isPathTileOpen(destRow, destCol, p)) return false;
 
 	bool visited[ROWS][COLS];
 	int parentRow[ROWS][COLS];
 	int parentCol[ROWS][COLS];
+	for (int r = 0; r < ROWS; r++) for (int c = 0; c < COLS; c++) visited[r][c] = false;
 
-	for (int r = 0; r < ROWS; r++)
-	{
-		for (int c = 0; c < COLS; c++)
-		{
-			visited[r][c] = false;
-		}
-	}
-
-	int queueRow[ROWS * COLS];
-	int queueCol[ROWS * COLS];
-	int qHead = 0;
-	int qTail = 0;
-
+	int queueRow[ROWS * COLS], queueCol[ROWS * COLS];
+	int qHead = 0, qTail = 0;
 	visited[startRow][startCol] = true;
-	queueRow[qTail] = startRow;
-	queueCol[qTail] = startCol;
-	qTail++;
+	queueRow[qTail] = startRow; queueCol[qTail] = startCol; qTail++;
 
 	int dRow[4] = { 1, -1, 0, 0 };
 	int dCol[4] = { 0, 0, -1, 1 };
-
 	bool found = false;
 
 	while (qHead < qTail)
 	{
-		int r = queueRow[qHead];
-		int c = queueCol[qHead];
-		qHead++;
-
-		if (r == destRow && c == destCol)
-		{
-			found = true;
-			break;
-		}
+		int r = queueRow[qHead], c = queueCol[qHead]; qHead++;
+		if (r == destRow && c == destCol) { found = true; break; }
 
 		for (int i = 0; i < 4; i++)
 		{
-			int nr = r + dRow[i];
-			int nc = c + dCol[i];
-
-			if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS)
-			{
-				continue;
-			}
-
-			if (visited[nr][nc])
-			{
-				continue;
-			}
-
-			// Same exception as above: the destination tile is allowed
-			// through even if it's red, since a route is allowed to end
-			// on one. Any other red tile is still a hard wall.
-			bool isRedDestination =
-				(nr == destRow) &&
-				(nc == destCol) &&
-				(tiles[nr][nc] == RED);
-
-			if (!isRedDestination && !isPathTileOpen(nr, nc))
-			{
-				continue;
-			}
+			int nr = r + dRow[i], nc = c + dCol[i];
+			if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+			if (visited[nr][nc]) continue;
+			bool isRedDestination = (nr == destRow) && (nc == destCol) && (tiles[nr][nc] == RED);
+			if (!isRedDestination && !isPathTileOpen(nr, nc, p)) continue;
 
 			visited[nr][nc] = true;
-			parentRow[nr][nc] = r;
-			parentCol[nr][nc] = c;
-
-			queueRow[qTail] = nr;
-			queueCol[qTail] = nc;
-			qTail++;
+			parentRow[nr][nc] = r; parentCol[nr][nc] = c;
+			queueRow[qTail] = nr; queueCol[qTail] = nc; qTail++;
 		}
 	}
 
-	if (!found)
-	{
-		return false;
-	}
+	if (!found) return false;
 
-	// Walk the parent chain backwards from the destination, then
-	// reverse it so outRow/outCol reads start -> destination.
-	int tmpRow[ROWS * COLS];
-	int tmpCol[ROWS * COLS];
+	int tmpRow[ROWS * COLS], tmpCol[ROWS * COLS];
 	int len = 0;
-
-	int r = destRow;
-	int c = destCol;
-
+	int r = destRow, c = destCol;
 	while (!(r == startRow && c == startCol))
 	{
-		tmpRow[len] = r;
-		tmpCol[len] = c;
-		len++;
-
-		int pr = parentRow[r][c];
-		int pc = parentCol[r][c];
-
-		r = pr;
-		c = pc;
+		tmpRow[len] = r; tmpCol[len] = c; len++;
+		int pr = parentRow[r][c], pc = parentCol[r][c];
+		r = pr; c = pc;
 	}
-
-	for (int i = 0; i < len; i++)
-	{
-		outRow[i] = tmpRow[len - 1 - i];
-		outCol[i] = tmpCol[len - 1 - i];
-	}
-
+	for (int i = 0; i < len; i++) { outRow[i] = tmpRow[len - 1 - i]; outCol[i] = tmpCol[len - 1 - i]; }
 	outLen = len;
 	return true;
 }
-
-// Starts a character moving toward (row, col), one adjacent tile at a
-// time. Rejects the move if the tile isn't a direct neighbour, so
-// nobody can hop across a red tile to reach a green one further away.
 
 bool moveCharacterToTile(
 	Player &p,
@@ -922,9 +736,6 @@ bool moveCharacterToTile(
 	return true;
 }
 
-// Freezes level1TimeTakenSeconds the moment the round ends, measured
-// from when the countdown actually started (not from the memorize
-// phase before it), clamped to the round length.
 
 void computeTimeTaken()
 {
@@ -954,18 +765,12 @@ void computeTimeTaken()
 	}
 }
 
-// Called the instant a character finishes arriving on a tile - handles
-// dying on red, scoring on green, and claiming that green tile for
-// the rest of the round
+
 
 void checkCharacterTile(Player &p)
 {
 	if (tiles[p.row][p.col] == RED)
 	{
-		// For the opening BOT_RED_IMMUNITY_SECONDS of the round, a bot
-		// is guaranteed to survive landing on a red tile - it's just
-		// bounced back to a safe tile instead of dying. After that
-		// window, red tiles are dangerous for bots again like normal.
 		if (p.isBot)
 		{
 			double sinceRoundStart =
@@ -984,9 +789,6 @@ void checkCharacterTile(Player &p)
 		level1GameOver = 1;
 
 		computeTimeTaken();
-
-		// A bot dying on a red tile is an instant win for the player.
-		// The player dying on one is an instant loss.
 		if (p.isBot)
 		{
 			level1Result = RESULT_WIN_BOT_DIED;
@@ -1001,14 +803,13 @@ void checkCharacterTile(Player &p)
 
 	if (tiles[p.row][p.col] == GREEN)
 	{
-		p.score++;
-
-		tileClaimed[p.row][p.col] = true;
+		if (p.row == p.pathDestRow && p.col == p.pathDestCol)
+		{
+			p.score++;
+			tileClaimed[p.row][p.col] = true;
+		}
 	}
 }
-
-// Smoothly slides a character from its current tile toward its target
-// tile, then locks it onto the target once it arrives
 
 void updateCharacter(Player &p)
 {
@@ -1066,10 +867,6 @@ void updateCharacter(Player &p)
 	}
 }
 
-// Flips the tiles between "visible" (memorize the layout) and
-// "hidden" (play from memory), regenerating the board each time a
-// new memorize phase begins
-
 void updateTileVisibility()
 {
 	double elapsed =
@@ -1082,20 +879,12 @@ void updateTileVisibility()
 		{
 			tilesVisible = false;
 
-			tileTimerStart = clock();
-
-			// The main countdown must only start ONCE, the very first
-			// time tiles go from visible to hidden. Every later
-			// reveal/hide cycle (each new memorize phase) used to
-			// reset level1TimerStart here too, which snapped the
-			// visible timer back up near GAME_TIME every few seconds
-			// instead of counting down smoothly. Guard it so it's
-			// only set the first time.
-			if (!level1TimerStarted)
+			for (int i = 0; i < BOT_COUNT; i++)
 			{
-				level1TimerStarted = true;
-				level1TimerStart = clock();
+				bots[i].destChosen = false;
 			}
+
+			tileTimerStart = clock();
 		}
 	}
 	else
@@ -1111,10 +900,6 @@ void updateTileVisibility()
 		}
 	}
 }
-
-// Counts the round timer down and decides the outcome once it hits zero:
-// the player wins only if they've collected more green tiles than every
-// bot, otherwise it's a loss.
 
 void updateLevel1Timer()
 {
@@ -1160,9 +945,6 @@ void updateLevel1Timer()
 			}
 		}
 
-		// A tie is neither a win nor a loss - the player collected
-		// exactly as many green tiles as the best bot, so calling
-		// that a loss (like the old code did) wasn't fair.
 		if (player.score > bestBotScore)
 		{
 			level1Result = RESULT_WIN_TIME_UP;
@@ -1178,11 +960,6 @@ void updateLevel1Timer()
 	}
 }
 
-// ---- Text helpers -------------------------------------------------
-// iText always draws from a left-aligned x, which is why every prompt
-// used to sit jammed against the left edge of the board. These two
-// helpers measure a string in pixels (using the real GLUT bitmap
-// widths) so text can be centered properly instead of eyeballed.
 
 int textPixelWidth(char *str, void *font)
 {
@@ -1208,10 +985,6 @@ void iTextCentered(int centerX, int y, char *str, void *font)
 		);
 }
 
-// Fills one tile with a soft two-tone shade (dark base + a lighter
-// band) plus a bright inner glow edge, instead of one flat color -
-// gives the red/green tiles some depth instead of looking like flat
-// paint swatches.
 
 void drawTileGlow(
 	int x,
@@ -1319,15 +1092,6 @@ void drawCharacter(Player &p, int botIndex = -1)
 		);
 }
 
-// Draws the timer + step-counter panel to the right of the grid, in a
-// glowing red-shaded box to match the trial's theme (no round/
-// difficulty text - just the two live stats that matter mid-run).
-
-// Red-glow HUD, drawn only while the round is actually in progress:
-// green-tile counts for the player and both bots, and the countdown -
-// both panels sit together at top middle instead of the opposite
-// corners they used to be in, hidden once the round ends since the
-// end-of-round box already covers this info.
 
 void drawHUD()
 {
@@ -1438,10 +1202,6 @@ void drawHUD()
 		);
 }
 
-// Big banner above the board telling the player which phase of the
-// round they're in - memorizing the layout, or moving blind. This
-// was a common point of confusion before (the only signal was the
-// tiles silently disappearing), so it's now spelled out clearly.
 
 void drawPhasePrompt()
 {
@@ -1468,8 +1228,6 @@ void drawPhasePrompt()
 		);
 }
 
-// Draws a small panel under the win/lose message showing how many
-// tiles the player and each bot actually collected this round.
 
 void drawScoreboard()
 {
@@ -1575,10 +1333,6 @@ void drawScoreboard()
 		);
 }
 
-// Draws a box with its four corners cut at 45 degrees (an octagon)
-// instead of square corners, with a layered neon glow border and a
-// short bright accent tick on each corner - the "sci-fi trial panel"
-// look used for the end-of-round box.
 
 void drawChamferedGlowBox(
 	int x, int y, int w, int h, int chamfer,
@@ -1600,18 +1354,12 @@ void drawChamferedGlowBox(
 	iSetColor(bgR, bgG, bgB);
 	iFilledPolygon(px, py, 8);
 
-	// Faint scanlines across the interior for a digital-readout feel -
-	// thin horizontal strips just a touch lighter than the background.
 	iSetColor(bgR + 6, bgG + 6, bgB + 6);
 
 	for (int scanY = y + 6; scanY < y + h - 6; scanY += 5)
 	{
 		iLine(x + chamfer / 2, scanY, x + w - chamfer / 2, scanY);
 	}
-
-	// Layered outline, dim to bright, each pass a little further out,
-	// scaled from the accent color so a win and a loss can read as
-	// different colors instead of everything always being red.
 	for (int pass = 0; pass < 5; pass++)
 	{
 		int inset = 5 - pass;
@@ -1686,11 +1434,6 @@ void drawDashedLine(
 		iLine(px, y, segEnd, y);
 	}
 }
-
-// Draws the end-of-round overlay: one big glowing red box with the
-// outcome, how long the round lasted, and how many tiles were
-// stepped on - always custom-drawn (not the static end-screen PNGs)
-// so the stats are real and there's never any icon/emoji baked in.
 
 void drawGameOver()
 {
@@ -1945,37 +1688,7 @@ void drawLevel1()
 		backgroundImage
 		);
 
-	iSetColor(15, 15, 15);
-
-	iFilledRectangle(
-		GRID_X,
-		GRID_Y,
-		GRID_WIDTH,
-		GRID_HEIGHT
-		);
-
-	iSetColor(5, 5, 5);
-
-	iRectangle(
-		GRID_X,
-		GRID_Y,
-		GRID_WIDTH,
-		GRID_HEIGHT
-		);
-
-	iRectangle(
-		GRID_X - 1,
-		GRID_Y - 1,
-		GRID_WIDTH + 2,
-		GRID_HEIGHT + 2
-		);
-
-	iRectangle(
-		GRID_X - 2,
-		GRID_Y - 2,
-		GRID_WIDTH + 4,
-		GRID_HEIGHT + 4
-		);
+	drawTileGlow(GRID_X, GRID_Y, GRID_WIDTH, GRID_HEIGHT, 15, 15, 15, 28, 28, 28, 45, 45, 45);
 
 	drawTiles();
 
@@ -1996,248 +1709,151 @@ void drawLevel1()
 	if (level1GameOver)
 	{
 		drawGameOver();
-
-		// The tiles-collected panel is meant to be shown together with
-		// the win/lose box (it was getting built but never actually
-		// drawn) - restoring the call so it appears again like before.
 		drawScoreboard();
 	}
 }
 
-// Moves the human player toward the clicked tile (one step, if it's
-// a legal move)
-
 void movePlayerToTile(int row, int col)
 {
-	if (!player.alive)
-	{
-		return;
-	}
+	if (!player.alive) return;
+	int fromRow = player.targetRow, fromCol = player.targetCol;
+	int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen;
 
-	// Plan from wherever the player will finish their current step,
-	// so clicking mid-walk continues smoothly instead of snapping.
-	int fromRow = player.targetRow;
-	int fromCol = player.targetCol;
+	if (!findPath(fromRow, fromCol, row, col, outRow, outCol, outLen, &player)) return;
 
-	int outRow[ROWS * COLS];
-	int outCol[ROWS * COLS];
-	int outLen;
-
-	bool hasPath = findPath(
-		fromRow,
-		fromCol,
-		row,
-		col,
-		outRow,
-		outCol,
-		outLen
-		);
-
-	if (!hasPath)
-	{
-		// No valid route to that tile right now (a red or claimed-green
-		// tile blocking the only way through, or it's off the board) -
-		// ignore the click. Clicking a red tile itself is fine and will
-		// path there - it's just fatal once the player arrives.
-		return;
-	}
-
-	for (int i = 0; i < outLen; i++)
-	{
-		player.pathRow[i] = outRow[i];
-		player.pathCol[i] = outCol[i];
-	}
-
+	for (int i = 0; i < outLen; i++) { player.pathRow[i] = outRow[i]; player.pathCol[i] = outCol[i]; }
 	player.pathLen = outLen;
 	player.pathIdx = 0;
+	player.pathDestRow = row;
+	player.pathDestCol = col;
 }
 
-// Advances the player one step along its queued path once it has
-// arrived at the current step's tile. If a step becomes blocked
-// (e.g. a bot got there first, or the board just regenerated), the
-// remaining path is cancelled instead of leaving the player stuck.
 
-void updatePlayerPath()
-{
-	if (!player.alive)
+	void updatePlayerPath()
 	{
-		return;
-	}
+		if (!player.alive) return;
+		bool arrived = (player.row == player.targetRow) && (player.col == player.targetCol);
+		if (!arrived) return;
+		if (player.pathIdx >= player.pathLen) return;
 
-	bool arrived =
-		(player.row == player.targetRow) &&
-		(player.col == player.targetCol);
+		int nextRow = player.pathRow[player.pathIdx];
+		int nextCol = player.pathCol[player.pathIdx];
+		bool isFinalStep = (player.pathIdx == player.pathLen - 1);
 
-	if (!arrived)
-	{
-		return;
-	}
-
-	if (player.pathIdx >= player.pathLen)
-	{
-		return;
-	}
-
-	int nextRow = player.pathRow[player.pathIdx];
-	int nextCol = player.pathCol[player.pathIdx];
-
-	if (moveCharacterToTile(player, nextRow, nextCol))
-	{
-		player.pathIdx++;
-	}
-	else
-	{
-		player.pathLen = 0;
-		player.pathIdx = 0;
-	}
-}
-
-// Picks the bot's next move. Most of the time it heads for a nearby
-// green tile like a player would (an efficient, deliberate "pattern"
-// rather than pure randomness); the rest of the time it takes any
-// other valid step instead, so it stays beatable and the round feels
-// like a real contest rather than the bot always winning.
-
-void botChooseMove(Player &bot)
-{
-	if (!bot.alive)
-	{
-		return;
-	}
-
-	if (
-		bot.row != bot.targetRow ||
-		bot.col != bot.targetCol
-		)
-	{
-		return;
-	}
-
-	int possibleRows[4] = { bot.row + 1, bot.row - 1, bot.row, bot.row };
-	int possibleCols[4] = { bot.col, bot.col, bot.col - 1, bot.col + 1 };
-
-	int validRows[4];
-	int validCols[4];
-	int validCount = 0;
-
-	int greenRows[4];
-	int greenCols[4];
-	int greenCount = 0;
-
-	for (int i = 0; i < 4; i++)
-	{
-		int r = possibleRows[i];
-		int c = possibleCols[i];
-
-		if (isValidTile(r, c, &bot))
+		if (moveCharacterToTile(player, nextRow, nextCol))
 		{
-			// Avoid immediately backtracking to the tile just left,
-			// so the bot doesn't shuffle back and forth in place
-			bool isPrevTile = (r == bot.prevRow && c == bot.prevCol);
+			player.stepIsFinal = isFinalStep;
+			player.pathIdx++;
+			return;
+		}
 
-			if (isPrevTile)
+		int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen;
+		if (findPath(player.row, player.col, player.pathDestRow, player.pathDestCol, outRow, outCol, outLen, &player))
+		{
+			for (int i = 0; i < outLen; i++) { player.pathRow[i] = outRow[i]; player.pathCol[i] = outCol[i]; }
+			player.pathLen = outLen;
+			player.pathIdx = 0;
+		}
+		else
+		{
+			player.pathLen = 0;
+			player.pathIdx = 0;
+		}
+	}
+
+void botChooseDestination(Player &bot)
+{
+	if (!bot.alive) return;
+	int destRow = -1, destCol = -1;
+	int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen = -1;
+
+	if (rand() % 100 < currentBotSmartChance)
+	{
+		for (int r = 0; r < ROWS; r++)
+		for (int c = 0; c < COLS; c++)
+		{
+			if (tiles[r][c] != GREEN || tileClaimed[r][c]) continue;
+			int tRow[ROWS * COLS], tCol[ROWS * COLS], tLen;
+			if (!findPath(bot.row, bot.col, r, c, tRow, tCol, tLen, &bot)) continue;
+			if (tLen > BOT_MAX_TARGET_DISTANCE) continue;
+			if (outLen == -1 || tLen < outLen)
 			{
-				continue;
-			}
-
-			validRows[validCount] = r;
-			validCols[validCount] = c;
-			validCount++;
-
-			if (tiles[r][c] == GREEN)
-			{
-				greenRows[greenCount] = r;
-				greenCols[greenCount] = c;
-				greenCount++;
+				outLen = tLen;
+				for (int i = 0; i < tLen; i++) { outRow[i] = tRow[i]; outCol[i] = tCol[i]; }
+				destRow = r; destCol = c;
 			}
 		}
 	}
 
-	// If backtracking is the only option (dead end), allow it after all
-	if (validCount == 0)
+	if (destRow == -1)
 	{
+		int pr[4] = { bot.row + 1, bot.row - 1, bot.row, bot.row };
+		int pc[4] = { bot.col, bot.col, bot.col - 1, bot.col + 1 };
+		int vr[4], vc[4], vCount = 0;
+
 		for (int i = 0; i < 4; i++)
+		if (isValidTile(pr[i], pc[i], &bot) && !(pr[i] == bot.prevRow && pc[i] == bot.prevCol))
 		{
-			int r = possibleRows[i];
-			int c = possibleCols[i];
-
-			if (isValidTile(r, c, &bot))
-			{
-				validRows[validCount] = r;
-				validCols[validCount] = c;
-				validCount++;
-
-				if (tiles[r][c] == GREEN)
-				{
-					greenRows[greenCount] = r;
-					greenCols[greenCount] = c;
-					greenCount++;
-				}
-			}
+			vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
 		}
+
+		if (vCount == 0)
+		for (int i = 0; i < 4; i++)
+		if (isValidTile(pr[i], pc[i], &bot))
+		{
+			vr[vCount] = pr[i]; vc[vCount] = pc[i]; vCount++;
+		}
+
+		if (vCount == 0) return;
+
+		int pick = rand() % vCount;
+		destRow = vr[pick]; destCol = vc[pick];
+		if (!findPath(bot.row, bot.col, destRow, destCol, outRow, outCol, outLen, &bot)) return;
 	}
 
-	if (validCount == 0)
+	for (int i = 0; i < outLen; i++) { bot.pathRow[i] = outRow[i]; bot.pathCol[i] = outCol[i]; }
+	bot.pathLen = outLen;
+	bot.pathIdx = 0;
+	bot.pathDestRow = destRow;
+	bot.pathDestCol = destCol;
+	bot.pathStartClock = clock();
+}
+
+void updateBotPath(Player &bot)
+{
+	if (!bot.alive) return;
+
+	if (bot.pathIdx < bot.pathLen &&
+		(double)(clock() - bot.pathStartClock) / CLOCKS_PER_SEC >= BOT_MAX_TRAVEL_SECONDS)
 	{
+		bot.pathLen = 0;
+		bot.pathIdx = 0;
 		return;
 	}
 
-	int chosenRow;
-	int chosenCol;
+	if (bot.row != bot.targetRow || bot.col != bot.targetCol) return;
+	if (bot.pathIdx >= bot.pathLen) return;
 
-	int roll = rand() % 100;
+	int nextRow = bot.pathRow[bot.pathIdx];
+	int nextCol = bot.pathCol[bot.pathIdx];
 
-	if (roll < currentBotSmartChance && greenCount > 0)
-	{
-		int pick = rand() % greenCount;
-		chosenRow = greenRows[pick];
-		chosenCol = greenCols[pick];
-	}
-	else
-	{
-		int pick = rand() % validCount;
-		chosenRow = validRows[pick];
-		chosenCol = validCols[pick];
-	}
-
-	moveCharacterToTile(bot, chosenRow, chosenCol);
-
-	bot.nextDecisionDelay =
-		BOT_MOVE_INTERVAL_MIN +
-		((double)(rand() % 100) / 100.0) *
-		(BOT_MOVE_INTERVAL_MAX - BOT_MOVE_INTERVAL_MIN);
+	if (moveCharacterToTile(bot, nextRow, nextCol)) bot.pathIdx++;
+	else { bot.pathLen = 0; bot.pathIdx = 0; }
 }
-
-// Gives every bot a chance to move once its decision delay has passed
 
 void updateBots()
 {
-	if (level1GameOver)
-	{
-		return;
-	}
-
-	if (tilesVisible)
-	{
-		return;
-	}
+	if (level1GameOver || tilesVisible) return;
 
 	for (int i = 0; i < BOT_COUNT; i++)
 	{
-		if (!bots[i].alive)
+		if (!bots[i].alive) continue;
+		updateBotPath(bots[i]);
+
+		if (!bots[i].destChosen)
 		{
-			continue;
-		}
-
-		double elapsed =
-			(double)(clock() - bots[i].botTimer)
-			/ CLOCKS_PER_SEC;
-
-		if (elapsed >= bots[i].nextDecisionDelay)
-		{
-			botChooseMove(bots[i]);
-
-			bots[i].botTimer = clock();
+			botChooseDestination(bots[i]);
+			bots[i].destChosen = true;
 		}
 	}
 }
@@ -2342,11 +1958,6 @@ void level1Update()
 	updatePlayerAnimation();
 }
 
-// Resets and starts a fresh level 1 round.
-// difficulty selects EASY / MEDIUM / HARD tuning (see setLevel1Difficulty);
-// defaults to EASY so any old call site without the argument still compiles
-// (the default is declared on the forward declaration near the top of
-// this file - a default argument can only be specified once).
 
 void startLevel1(int difficulty)
 {
