@@ -86,6 +86,12 @@
     <ClInclude Include="glut.h" />
     <ClInclude Include="iGraphics.h" />
     <ClInclude Include="Level1.hpp" />
+    <ClInclude Include="Level1_Assets.hpp" />
+    <ClInclude Include="Level1_Bot.hpp" />
+    <ClInclude Include="Level1_Character.hpp" />
+    <ClInclude Include="Level1_Config.hpp" />
+    <ClInclude Include="Level1_Logic.hpp" />
+    <ClInclude Include="Level1_Render.hpp" />
     <ClInclude Include="menu.hpp" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
