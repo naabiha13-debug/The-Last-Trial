@@ -4,6 +4,8 @@
 int menuBackground;
 int menuTitle;
 int menuScreen = 0;
+int loadingProgress = 0;   // 0 to 100
+int loadingTimer = 0;      // bar fill
 int buttonPlay;
 int buttonStory;
 int buttonCredit;
@@ -19,6 +21,7 @@ int nextButton;
 int backButton;
 int story1;
 int story2;
+int story3;
 int characterNormal;
 int characterSlightLeft;
 int characterLeft;
@@ -53,11 +56,12 @@ void initMenu()
 	backButton = iLoadImage("Image//back.png");
 	story1 = iLoadImage("Image//story1.png");
 	story2 = iLoadImage("Image//story2.png");
-	characterNormal = iLoadImage("Image//sprite_3-removebg-preview.png");
-	characterSlightLeft = iLoadImage("Image//sprite_2-removebg-preview.png");
-	characterLeft = iLoadImage("Image//sprite_1-removebg-preview.png");
-	characterSlightRight = iLoadImage("Image//sprite_4-removebg-preview.png");
-	characterRight = iLoadImage("Image//sprite_5-removebg-preview.png");
+	story3 = iLoadImage("Image//story3.png");
+	characterNormal = iLoadImage("Image//still_aligned.png");
+	characterSlightLeft = iLoadImage("Image//ektuleft_aligned.png");
+	characterLeft = iLoadImage("Image//puraleft_aligned.png");
+	characterSlightRight = iLoadImage("Image//ekturight_aligned.png");
+	characterRight = iLoadImage("Image//puraleft_aligned.png");
 	enterImage = iLoadImage("Image//enter.png");
 }
 void DrawMenu()
@@ -73,23 +77,23 @@ void DrawMenu()
 	{
 		if (characterFrame == 0)
 		{
-			iShowImage(540, 12, 290, 457, characterNormal);
+			iShowImage(540, 12, 290, 500, characterNormal);
 		}
 		else if (characterFrame == 1)
 		{
-			iShowImage(540, 12, 290, 457, characterSlightLeft);
+			iShowImage(540, 12, 290, 500, characterSlightLeft);
 		}
 		else if (characterFrame == 2)
 		{
-			iShowImage(540, 12, 290, 457, characterLeft);
+			iShowImage(540, 12, 290, 500, characterLeft);
 		}
 		else if (characterFrame == 3)
 		{
-			iShowImage(540, 12, 290, 457, characterSlightRight);
+			iShowImage(540, 12, 290, 500, characterSlightRight);
 		}
 		else if (characterFrame == 4)
 		{
-			iShowImage(540, 12, 290, 457, characterRight);
+			iShowImage(540, 12, 290, 500, characterRight);
 		}
 		if (hoverButton == 1)
 			iShowImage(125, 345, 280, 90, buttonPlay);
@@ -116,6 +120,18 @@ void DrawMenu()
 		iShowImage(130, 350, 270, 80, buttonLevel1);
 		iShowImage(130, 250, 270, 80, buttonLevel2);
 		iShowImage(130, 150, 270, 80, buttonLevel3);
+	}
+	else if (menuScreen == 3)
+	{
+		iShowImage(200, 300, 600, 200, menuTitle);
+		iSetColor(255, 255, 255);
+		iText(440, 160, "Loading...", GLUT_BITMAP_TIMES_ROMAN_24);
+		
+		iSetColor(135, 26, 57);// Progress bar outline (empty box)
+		iRectangle(300, 100, 400, 25);
+		// Filled part — width grows with loadingProgress
+		iSetColor(135, 16, 57);
+		iFilledRectangle(300, 100, (400 * loadingProgress) / 100, 25);
 	}
 	
 }
@@ -153,25 +169,12 @@ void DrawCredits()
 	// BACK button
 	iShowImage(60, 500, 140, 50, backButton);
 }
-/*void updateCharacterAnimation()
-{
-	characterTimer++;
 
-	if (characterTimer >= 8)
-	{
-		characterTimer = 0;
-
-		characterFrame++;
-
-		if (characterFrame > 8)
-			characterFrame = 0;
-	}
-}*/
 void updateCharacterAnimation()
 {
 	characterTimer++;
 
-	if (characterTimer >= 8)
+	if (characterTimer >= 17)
 	{
 		characterTimer = 0;
 
@@ -196,6 +199,13 @@ void DrawStory()
 	else if (storyPage == 2)
 	{
 		iShowImage(0, 0, 1000, 600, story2);
+
+		// NEXT button (was BACK before)
+		iShowImage(800, 500, 140, 50, nextButton);
+	}
+	else if (storyPage == 3)   // ADD THIS BLOCK
+	{
+		iShowImage(0, 0, 1000, 600, story3);
 
 		// BACK button
 		iShowImage(60, 500, 140, 50, backButton);

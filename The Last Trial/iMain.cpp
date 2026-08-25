@@ -3,6 +3,7 @@ int storyPage = 1;
 #include "menu.hpp"
 #include "Level1.hpp"
 #include <math.h>
+#include "Audio.hpp"
 #include <stdlib.h>
 
 
@@ -139,6 +140,7 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 1
 				currentScreen = 1;
 				startLevel1();
+				playLevel1Music();
 			}
 			else if (mx >= 60 && mx <= 200 &&
 				my >= 500 && my <= 550)
@@ -168,6 +170,15 @@ void iMouse(int button, int state, int mx, int my)
 				}
 			}
 			else if (storyPage == 2)
+			{
+				// NEXT button (was BACK)
+				if (mx >= 800 && mx <= 940 &&
+					my >= 500 && my <= 550)
+				{
+					storyPage = 3;
+				}
+			}
+			else if (storyPage == 3)   // ADD THIS BLOCK
 			{
 				// BACK button
 				if (mx >= 60 && mx <= 200 &&
@@ -221,11 +232,27 @@ void fixedUpdate()
 		x++;
 	}
 
-
-	// Enter advances from the title screen to the main menu buttons
-	if (isKeyPressed('\r'))
+	// Enter advances from the title screen to the loading screen
+	if (isKeyPressed('\r') && menuScreen == 0)
 	{
-		menuScreen = 1;
+		menuScreen = 3;
+		loadingProgress = 0;
+		loadingTimer = 0;
+	}
+	if (menuScreen == 3)
+	{
+		loadingTimer++;
+
+		if (loadingTimer >= 1)
+		{
+			loadingTimer = 0;
+			loadingProgress++;
+
+			if (loadingProgress >= 100)
+			{
+				menuScreen = 1;
+			}
+		}
 	}
 
 
@@ -243,16 +270,7 @@ void fixedUpdate()
 
 int main()
 {
-	// Opening/Loading the audio files
-	mciSendString("open \"Audios//villain.mp3\" alias bgsong", NULL, 0, NULL);
-	mciSendString("open \"Audios//gameover.mp3\" alias ggsong", NULL, 0, NULL);
-
-	// Playing the background audio on repeat
-	mciSendString("play bgsong repeat", NULL, 0, NULL);
-
-	// If the use of an audio is finished, close it to free memory
-	// mciSendString("close bgsong", NULL, 0, NULL);
-	// mciSendString("close ggsong", NULL, 0, NULL);
+	loadAudio();
 	
 
 	iInitialize(1000, 600, "The Last Trial");

@@ -46,8 +46,8 @@ void initLevel1()
 	botImg[1][DIR_RIGHT][0] = iLoadImage("Image//bot2_walk_right_1.png");
 	botImg[1][DIR_RIGHT][1] = iLoadImage("Image//bot2_walk_right_2.png");
 
-	gameOverImage = iLoadImage("Image//Game Over.png");
-	victoryImage = iLoadImage("Image//Win.png");
+	gameOverImage = iLoadImage("Image//gameOver.png");
+	victoryImage = iLoadImage("Image//victory.png");
 }
 
 #endif
