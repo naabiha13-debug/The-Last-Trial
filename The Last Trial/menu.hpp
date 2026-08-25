@@ -53,11 +53,11 @@ void initMenu()
 	backButton = iLoadImage("Image//back.png");
 	story1 = iLoadImage("Image//story1.png");
 	story2 = iLoadImage("Image//story2.png");
-	characterNormal = iLoadImage("Image//hn.png");
-	characterSlightLeft = iLoadImage("Image//hml.png");
-	characterLeft = iLoadImage("Image//hl.png");
-	characterSlightRight = iLoadImage("Image//hmr.png");
-	characterRight = iLoadImage("Image//hr.png");
+	characterNormal = iLoadImage("Image//sprite_3-removebg-preview.png");
+	characterSlightLeft = iLoadImage("Image//sprite_2-removebg-preview.png");
+	characterLeft = iLoadImage("Image//sprite_1-removebg-preview.png");
+	characterSlightRight = iLoadImage("Image//sprite_4-removebg-preview.png");
+	characterRight = iLoadImage("Image//sprite_5-removebg-preview.png");
 	enterImage = iLoadImage("Image//enter.png");
 }
 void DrawMenu()
@@ -73,23 +73,23 @@ void DrawMenu()
 	{
 		if (characterFrame == 0)
 		{
-			iShowImage(540, 10, 290, 457, characterNormal);
+			iShowImage(540, 12, 290, 457, characterNormal);
 		}
 		else if (characterFrame == 1)
 		{
-			iShowImage(540, 10, 290, 457, characterSlightLeft);
+			iShowImage(540, 12, 290, 457, characterSlightLeft);
 		}
 		else if (characterFrame == 2)
 		{
-			iShowImage(540, 10, 290, 457, characterLeft);
+			iShowImage(540, 12, 290, 457, characterLeft);
 		}
 		else if (characterFrame == 3)
 		{
-			iShowImage(540, 10, 290, 457, characterSlightRight);
+			iShowImage(540, 12, 290, 457, characterSlightRight);
 		}
 		else if (characterFrame == 4)
 		{
-			iShowImage(540, 10, 290, 457, characterRight);
+			iShowImage(540, 12, 290, 457, characterRight);
 		}
 		if (hoverButton == 1)
 			iShowImage(125, 345, 280, 90, buttonPlay);
