@@ -22,6 +22,8 @@ void iTextCentered(int centerX, int y, char *str, void *font)
 	iText(centerX - width / 2, y, str, font);
 }
 
+#include "Level1_Intro.hpp"
+
 void drawTileGlow(
 	int x, int y, int w, int h,
 	int baseR, int baseG, int baseB,
@@ -272,6 +274,18 @@ void drawEndScreen()
 
 void drawLevel1()
 {
+	if (level1Phase == LEVEL1_PHASE_INTRO)
+	{
+		drawLevel1Intro();
+		return;
+	}
+
+	if (level1Phase == LEVEL1_PHASE_COUNTDOWN)
+	{
+		drawLevel1Countdown();
+		return;
+	}
+
 	iShowImage(
 		0, 0,
 		1000, 600,

@@ -57,6 +57,9 @@
     <ClInclude Include="Audio.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Level1_Intro.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iMain.cpp">

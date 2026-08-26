@@ -91,6 +91,7 @@
     <ClInclude Include="Level1_Bot.hpp" />
     <ClInclude Include="Level1_Character.hpp" />
     <ClInclude Include="Level1_Config.hpp" />
+    <ClInclude Include="Level1_Intro.hpp" />
     <ClInclude Include="Level1_Logic.hpp" />
     <ClInclude Include="Level1_Render.hpp" />
     <ClInclude Include="menu.hpp" />

@@ -206,6 +206,30 @@ bool moveCharacterToTile(Player &p, int row, int col)
 	return true;
 }
 
+void decideLevel1Result(bool botDiedTriggered)
+{
+	int playerScore = player.score;
+	int bot1Score = bots[0].score;
+	int bot2Score = bots[1].score;
+
+	int lowestScore = playerScore;
+	if (bot1Score < lowestScore) lowestScore = bot1Score;
+	if (bot2Score < lowestScore) lowestScore = bot2Score;
+
+	if (playerScore == lowestScore)
+	{
+		level1Result = botDiedTriggered
+			? RESULT_LOSE_RED_TILE
+			: RESULT_LOSE_TIME_UP;
+	}
+	else
+	{
+		level1Result = botDiedTriggered
+			? RESULT_WIN_BOT_DIED
+			: RESULT_WIN_TIME_UP;
+	}
+}
+
 void checkCharacterTile(Player &p)
 {
 	if (tiles[p.row][p.col] == RED)
@@ -228,7 +252,7 @@ void checkCharacterTile(Player &p)
 
 		if (p.isBot)
 		{
-			level1Result = RESULT_WIN_BOT_DIED;
+			decideLevel1Result(true);
 		}
 		else
 		{
