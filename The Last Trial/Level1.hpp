@@ -1,6 +1,7 @@
 #ifndef LEVEL1_HPP
 #define LEVEL1_HPP
 
+#include "Audio.hpp"
 #include "Level1_Config.hpp"
 #include "Level1_Character.hpp"
 #include "Level1_Bot.hpp"

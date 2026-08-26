@@ -107,6 +107,7 @@ void level1Mouse(
 		if (hitBack)
 		{
 			currentScreen = 2;
+			playMenuMusic();
 		}
 		return;
 	}
@@ -187,5 +188,6 @@ void startLevel1()
 	roundStartClock = clock();
 	level1PlayElapsedSeconds = 0.0;
 	level1PlayTimerRunning = false;
+	playLevel1Music();
 }
 #endif

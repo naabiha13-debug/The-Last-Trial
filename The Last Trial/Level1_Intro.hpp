@@ -44,6 +44,7 @@ void startLevel1Countdown()
 {
 	level1Phase = LEVEL1_PHASE_COUNTDOWN;
 	level1CountdownStart = clock();
+	playCountdownMusic();
 }
 
 void enterLevel1()

@@ -155,7 +155,7 @@ void drawHUD()
 	sprintf_s(
 		greenCountsText,
 		sizeof(greenCountsText),
-		"YOU %d    BOT1 %d    BOT2 %d",
+		"YOU:%d    047:%d    392:%d",
 		player.score,
 		bots[0].score,
 		bots[1].score);

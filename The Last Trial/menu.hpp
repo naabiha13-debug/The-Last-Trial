@@ -58,10 +58,10 @@ void initMenu()
 	story2 = iLoadImage("Image//story2.png");
 	story3 = iLoadImage("Image//story3.png");
 	characterNormal = iLoadImage("Image//still_aligned.png");
-	characterSlightLeft = iLoadImage("Image//ektuleft_aligned.png");
-	characterLeft = iLoadImage("Image//puraleft_aligned.png");
-	characterSlightRight = iLoadImage("Image//ekturight_aligned.png");
-	characterRight = iLoadImage("Image//puraRight_aligned.png");
+	characterSlightLeft = iLoadImage("Image//halfLeft.png");
+	characterLeft = iLoadImage("Image//left.png");
+	characterSlightRight = iLoadImage("Image//halfRight.png");
+	characterRight = iLoadImage("Image//right.png");
 	enterImage = iLoadImage("Image//enter.png");
 }
 void DrawMenu()

@@ -140,7 +140,7 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 1
 				currentScreen = 1;
 				enterLevel1();
-				playLevel1Music();
+				stopMenuMusic();
 			}
 			else if (mx >= 60 && mx <= 200 &&
 				my >= 500 && my <= 550)
