@@ -186,6 +186,19 @@ void botChooseDestination(Player &bot)
 {
 	if (!bot.alive) return;
 
+	// If bot is already standing on a green tile, stay strictly in place!
+	if (tiles[bot.row][bot.col] == GREEN)
+	{
+		bot.pathLen = 0;
+		bot.pathIdx = 0;
+		bot.pathDestRow = bot.row;
+		bot.pathDestCol = bot.col;
+		bot.targetRow = bot.row;
+		bot.targetCol = bot.col;
+		bot.destChosen = true;
+		return;
+	}
+
 	double sinceRoundStart =
 		(double)(clock() - roundStartClock) / CLOCKS_PER_SEC;
 
@@ -313,6 +326,7 @@ void updateBots()
 	for (int i = 0; i < BOT_COUNT; i++)
 	{
 		if (!bots[i].alive) continue;
+		if (bots[i].hasClaimedGreenThisRound) continue; // Cannot move anymore if already stepped on green this round!
 
 		updateBotPath(bots[i]);
 

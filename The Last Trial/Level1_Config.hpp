@@ -1,7 +1,6 @@
 #ifndef LEVEL1_CONFIG_HPP
 #define LEVEL1_CONFIG_HPP
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -151,7 +150,9 @@ int backgroundImage;
 int playerImg[4][2];
 int botImg[BOT_COUNT][4][2];
 int gameOverImage;
-int victoryImage;
+int victory1Image;
+int victory2Image;
+int qualifiedBot = 0;
 
 int level1GameOver = 0;
 int level1Time = GAME_TIME_DEFAULT;

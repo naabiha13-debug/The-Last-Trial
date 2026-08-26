@@ -11,10 +11,28 @@ void updateTileVisibility()
 		if (elapsed >= currentTileVisibleDuration)
 		{
 			tilesVisible = false;
+
 			for (int i = 0; i < BOT_COUNT; i++)
 			{
-				bots[i].destChosen = false;
+				if (tiles[bots[i].row][bots[i].col] == GREEN)
+				{
+					// Bot is already on green: claim point and LOCK in place for this round!
+					claimStandingTile(bots[i]);
+					bots[i].pathLen = 0;
+					bots[i].pathIdx = 0;
+					bots[i].pathDestRow = bots[i].row;
+					bots[i].pathDestCol = bots[i].col;
+					bots[i].targetRow = bots[i].row;
+					bots[i].targetCol = bots[i].col;
+					bots[i].destChosen = true; // DO NOT move to other tiles!
+				}
+				else
+				{
+					// Bot is not on green: allow it to search and move to a tile
+					bots[i].destChosen = false;
+				}
 			}
+
 			tileTimerStart = clock();
 			level1PlaySegmentStart = clock();
 			level1PlayTimerRunning = true;
@@ -33,6 +51,13 @@ void updateTileVisibility()
 				level1PlayElapsedSeconds += segmentElapsed;
 				level1PlayTimerRunning = false;
 			}
+
+			// If player stayed on starting green tile without moving, award point now!
+			if (!playerMovedThisRound && !player.hasClaimedGreenThisRound)
+			{
+				claimStandingTile(player);
+			}
+
 			generateTiles();
 			level1Round++;
 			tilesVisible = true;
@@ -111,7 +136,7 @@ void level1Mouse(
 		}
 		return;
 	}
-	if (tilesVisible)
+	if (tilesVisible || player.hasClaimedGreenThisRound)
 	{
 		return;
 	}

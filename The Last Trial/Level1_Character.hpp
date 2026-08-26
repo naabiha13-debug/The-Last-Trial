@@ -27,6 +27,8 @@ struct Player
 	int pathDestRow, pathDestCol;
 	clock_t pathStartClock;
 	bool destChosen;
+	clock_t lastTileTime;
+	bool hasClaimedGreenThisRound;
 };
 
 Player player;
@@ -103,6 +105,8 @@ void initializeCharacter(Player &p, int row, int col, bool bot)
 	p.pathDestCol = col;
 	p.pathStartClock = clock();
 	p.destChosen = false;
+	p.lastTileTime = 0;
+	p.hasClaimedGreenThisRound = false;
 }
 
 void initializePlayers()
@@ -120,13 +124,23 @@ void clearRedUnderCharacter(Player &p)
 	}
 }
 
-void claimTileIfGreen(Player &p)
+void claimStandingTile(Player &p)
 {
-	if (tiles[p.row][p.col] == GREEN)
+	if (!p.alive) return;
+
+	if (p.row == p.targetRow && p.col == p.targetCol)
 	{
-		tileClaimed[p.row][p.col] = true;
+		if (tiles[p.row][p.col] == GREEN && !tileClaimed[p.row][p.col])
+		{
+			p.score++;
+			p.lastTileTime = clock();
+			tileClaimed[p.row][p.col] = true;
+			p.hasClaimedGreenThisRound = true;
+		}
 	}
 }
+
+bool playerMovedThisRound = false;
 
 void generateTiles()
 {
@@ -160,11 +174,11 @@ void generateTiles()
 		clearRedUnderCharacter(bots[i]);
 	}
 
-	claimTileIfGreen(player);
-
+	playerMovedThisRound = false;
+	player.hasClaimedGreenThisRound = false;
 	for (int i = 0; i < BOT_COUNT; i++)
 	{
-		claimTileIfGreen(bots[i]);
+		bots[i].hasClaimedGreenThisRound = false;
 	}
 
 	player.pathLen = 0;
@@ -206,27 +220,75 @@ bool moveCharacterToTile(Player &p, int row, int col)
 	return true;
 }
 
+bool isContestantBetter(const Player &a, const Player &b)
+{
+	// Alive contestant beats dead contestant
+	if (a.alive != b.alive)
+	{
+		return a.alive;
+	}
+
+	// Higher score beats lower score
+	if (a.score != b.score)
+	{
+		return a.score > b.score;
+	}
+
+	// If scores are equal, whoever stepped on the green tile first wins
+	if (a.score > 0)
+	{
+		return a.lastTileTime < b.lastTileTime;
+	}
+
+	return false;
+}
+
 void decideLevel1Result(bool botDiedTriggered)
 {
-	int playerScore = player.score;
-	int bot1Score = bots[0].score;
-	int bot2Score = bots[1].score;
-
-	int lowestScore = playerScore;
-	if (bot1Score < lowestScore) lowestScore = bot1Score;
-	if (bot2Score < lowestScore) lowestScore = bot2Score;
-
-	if (playerScore == lowestScore)
+	if (botDiedTriggered)
 	{
-		level1Result = botDiedTriggered
-			? RESULT_LOSE_RED_TILE
-			: RESULT_LOSE_TIME_UP;
+		// A bot died, so player qualifies as long as player is alive
+		level1Result = player.alive ? RESULT_WIN_BOT_DIED : RESULT_LOSE_RED_TILE;
+		// The bot that survived is the qualified bot
+		qualifiedBot = bots[0].alive ? 0 : 1;
+		return;
+	}
+
+	// ৩ জনের স্কোর সমান হলে (৩-ওয়ে টাই), সবাই ফেইল্ড (Failed to Survive)
+	if (player.score == bots[0].score && player.score == bots[1].score)
+	{
+		level1Result = RESULT_LOSE_TIME_UP;
+		return;
+	}
+
+	// Count how many bots performed strictly better than the player
+	int betterCount = 0;
+	for (int i = 0; i < BOT_COUNT; i++)
+	{
+		if (isContestantBetter(bots[i], player))
+		{
+			betterCount++;
+		}
+	}
+
+	// Top 2 qualify: if fewer than 2 contestants are better than the player, player qualifies!
+	if (betterCount < 2)
+	{
+		level1Result = RESULT_WIN_TIME_UP;
+
+		// Between the two bots, the one who performed better qualifies alongside player
+		if (isContestantBetter(bots[0], bots[1]))
+		{
+			qualifiedBot = 0; // Bot 047
+		}
+		else
+		{
+			qualifiedBot = 1; // Bot 392
+		}
 	}
 	else
 	{
-		level1Result = botDiedTriggered
-			? RESULT_WIN_BOT_DIED
-			: RESULT_WIN_TIME_UP;
+		level1Result = RESULT_LOSE_TIME_UP;
 	}
 }
 
@@ -262,12 +324,16 @@ void checkCharacterTile(Player &p)
 		return;
 	}
 
-	if (tiles[p.row][p.col] == GREEN)
+	if (tiles[p.row][p.col] == GREEN && !tileClaimed[p.row][p.col])
 	{
 		if (p.row == p.pathDestRow && p.col == p.pathDestCol)
 		{
 			p.score++;
+			p.lastTileTime = clock();
 			tileClaimed[p.row][p.col] = true;
+			p.hasClaimedGreenThisRound = true;
+			p.pathLen = 0;
+			p.pathIdx = 0;
 		}
 	}
 }
@@ -318,6 +384,12 @@ void updateCharacter(Player &p)
 void movePlayerToTile(int row, int col)
 {
 	if (!player.alive) return;
+	if (player.hasClaimedGreenThisRound) return; // Cannot move if green tile already claimed this round!
+
+	if (row != player.row || col != player.col)
+	{
+		playerMovedThisRound = true;
+	}
 
 	int fromRow = player.targetRow, fromCol = player.targetCol;
 	int outRow[ROWS * COLS], outCol[ROWS * COLS], outLen;
@@ -339,6 +411,7 @@ void movePlayerToTile(int row, int col)
 void updatePlayerPath()
 {
 	if (!player.alive) return;
+	if (player.hasClaimedGreenThisRound) return; // Lock in place!
 
 	bool arrived = (player.row == player.targetRow) &&
 		(player.col == player.targetCol);

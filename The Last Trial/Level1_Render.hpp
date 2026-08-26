@@ -238,7 +238,11 @@ void drawEndScreen()
 		(level1Result == RESULT_WIN_BOT_DIED) ||
 		(level1Result == RESULT_WIN_TIME_UP);
 
-	int img = won ? victoryImage : gameOverImage;
+	int img = gameOverImage;
+	if (won)
+	{
+		img = (qualifiedBot == 0) ? victory1Image : victory2Image;
+	}
 
 	int dispW = won ? 620 : 560;
 	int dispH = won ? (int)(dispW * 793.0 / 1983.0)
