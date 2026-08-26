@@ -61,7 +61,7 @@ void initMenu()
 	characterSlightLeft = iLoadImage("Image//ektuleft_aligned.png");
 	characterLeft = iLoadImage("Image//puraleft_aligned.png");
 	characterSlightRight = iLoadImage("Image//ekturight_aligned.png");
-	characterRight = iLoadImage("Image//puraleft_aligned.png");
+	characterRight = iLoadImage("Image//puraRight_aligned.png");
 	enterImage = iLoadImage("Image//enter.png");
 }
 void DrawMenu()
