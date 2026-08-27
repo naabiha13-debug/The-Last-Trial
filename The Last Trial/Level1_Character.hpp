@@ -118,9 +118,30 @@ void initializePlayers()
 
 void clearRedUnderCharacter(Player &p)
 {
-	if (tiles[p.row][p.col] == RED)
+	if (!p.alive) return;
+
+	if (p.row >= 0 && p.row < ROWS && p.col >= 0 && p.col < COLS)
 	{
-		tiles[p.row][p.col] = WHITE;
+		if (tiles[p.row][p.col] == RED)
+		{
+			tiles[p.row][p.col] = WHITE;
+		}
+	}
+
+	if (p.targetRow >= 0 && p.targetRow < ROWS && p.targetCol >= 0 && p.targetCol < COLS)
+	{
+		if (tiles[p.targetRow][p.targetCol] == RED)
+		{
+			tiles[p.targetRow][p.targetCol] = WHITE;
+		}
+	}
+
+	if (p.prevRow >= 0 && p.prevRow < ROWS && p.prevCol >= 0 && p.prevCol < COLS)
+	{
+		if (tiles[p.prevRow][p.prevCol] == RED)
+		{
+			tiles[p.prevRow][p.prevCol] = WHITE;
+		}
 	}
 }
 
