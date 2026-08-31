@@ -28,9 +28,9 @@ void loadLevel1IntroImages()
 	static bool loaded = false;
 	if (loaded) return;
 
-	level1IntroImg[0] = iLoadImage("Image//Level1GamePlay1.png");
-	level1IntroImg[1] = iLoadImage("Image//Level1GamePlay2.png");
-	level1IntroImg[2] = iLoadImage("Image//Level1GamePlay3.png");
+	level1IntroImg[0] = iLoadImage("Image//l1g1.png");
+	level1IntroImg[1] = iLoadImage("Image//l1g2.png");
+	level1IntroImg[2] = iLoadImage("Image//l1g3.png");
 
 	introNextImg = iLoadImage("Image//next.png");
 	introSkipImg = iLoadImage("Image//skip.png");

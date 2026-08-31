@@ -2,6 +2,7 @@
 int storyPage = 1;
 #include "menu.hpp"
 #include "Level1.hpp"
+#include "Level2.hpp"
 #include <math.h>
 #include "Audio.hpp"
 #include <stdlib.h>
@@ -36,6 +37,10 @@ void iDraw()
 	else if (currentScreen == 4)
 	{
 		DrawStory();
+	}
+	else if (currentScreen == 5)
+	{
+		DrawLevel2();
 	}
 }
 
@@ -142,12 +147,23 @@ void iMouse(int button, int state, int mx, int my)
 				enterLevel1();
 				stopMenuMusic();
 			}
+
+			else if (mx >= 365 && mx <= 635 &&
+				my >= 260 && my <= 340)
+			{
+				// Level 2
+				currentScreen = 5;
+				loadLevel2Assets();
+				stopMenuMusic();
+			}
+
 			else if (mx >= 60 && mx <= 200 &&
 				my >= 500 && my <= 550)
 			{
 				// BACK
 				currentScreen = 0;
 			}
+		
 		}
 		else if (currentScreen == 3)
 		{
@@ -209,8 +225,10 @@ void fixedUpdate()
 	{
 		level1Update();
 	}
-
-
+	if (currentScreen == 5)
+	{
+		level2Update();
+	}
 	// Free-roam WASD/arrow controls (used outside level 1)
 	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP))
 	{
