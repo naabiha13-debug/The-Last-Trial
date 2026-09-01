@@ -184,17 +184,15 @@ void iMouse(int button, int state, int mx, int my)
 				}
 			}
 			else if (storyPage == 2)
-			{
-				// NEXT button (was BACK)
+			{   //next
 				if (mx >= 800 && mx <= 940 &&
 					my >= 500 && my <= 550)
 				{
 					storyPage = 3;
 				}
 			}
-			else if (storyPage == 3)   // ADD THIS BLOCK
-			{
-				// BACK button
+			else if (storyPage == 3)   
+			{   //back
 				if (mx >= 60 && mx <= 200 &&
 					my >= 500 && my <= 550)
 				{
