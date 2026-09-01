@@ -200,10 +200,10 @@ void DrawStory()
 	{
 		iShowImage(0, 0, 1000, 600, story2);
 
-		// NEXT button (was BACK before)
+		// NEXT button 
 		iShowImage(800, 500, 140, 50, nextButton);
 	}
-	else if (storyPage == 3)   // ADD THIS BLOCK
+	else if (storyPage == 3)  
 	{
 		iShowImage(0, 0, 1000, 600, story3);
 
