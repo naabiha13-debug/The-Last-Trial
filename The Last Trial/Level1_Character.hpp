@@ -275,7 +275,7 @@ void decideLevel1Result(bool botDiedTriggered)
 		return;
 	}
 
-	// ৩ জনের স্কোর সমান হলে (৩-ওয়ে টাই), সবাই ফেইল্ড (Failed to Survive)
+	// all tie
 	if (player.score == bots[0].score && player.score == bots[1].score)
 	{
 		level1Result = RESULT_LOSE_TIME_UP;

@@ -4,7 +4,7 @@
 void loadAudio()
 {
 	mciSendString("open \"Audios//menuMusic.mp3\" alias bgsong", NULL, 0, NULL);
-	mciSendString("open \"Audios//level1Music.mp3\" alias levelsong", NULL, 0, NULL);
+	mciSendString("open \"Audios//l1music.mp3\" alias levelsong", NULL, 0, NULL);
 	mciSendString("open \"Audios//startCountDown.mp3\" alias ggsong", NULL, 0, NULL);
 
 	mciSendString("play bgsong repeat", NULL, 0, NULL);
