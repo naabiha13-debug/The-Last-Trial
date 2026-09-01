@@ -7,12 +7,10 @@ int storyPage = 1;
 #include "Audio.hpp"
 #include <stdlib.h>
 
-
 int x = 0;
 int y = 0;
 
 int currentScreen = 0;
-
 
 void iDraw()
 {

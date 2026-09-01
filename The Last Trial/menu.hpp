@@ -27,23 +27,14 @@ int characterSlightLeft;
 int characterLeft;
 int characterSlightRight;
 int characterRight;
-
 int characterFrame = 0;
 int characterTimer = 0;
 int enterImage;
-
-bool hoverBack = false;
-
-
-
 
 void initMenu()
 {
 	menuBackground = iLoadImage("Image//bg.png");
 	menuTitle = iLoadImage("Image//title.png");
-	characterNormal = iLoadImage("Image//normal.png");
-	characterLeft = iLoadImage("Image//left.png");
-	characterRight = iLoadImage("Image//right.png");
 	buttonPlay = iLoadImage("Image//play.png");
 	buttonStory = iLoadImage("Image//story.png");
 	buttonCredit = iLoadImage("Image//credits.png");
@@ -89,11 +80,27 @@ void DrawMenu()
 		}
 		else if (characterFrame == 3)
 		{
-			iShowImage(540, 12, 290, 500, characterSlightRight);
+			iShowImage(540, 12, 290, 500, characterSlightLeft);
 		}
 		else if (characterFrame == 4)
 		{
+			iShowImage(540, 12, 290, 500, characterNormal);
+		}
+		else if (characterFrame == 5)
+		{
+			iShowImage(540, 12, 290, 500, characterSlightRight);
+		}
+		else if (characterFrame == 6)
+		{
 			iShowImage(540, 12, 290, 500, characterRight);
+		}
+		else if (characterFrame == 7)
+		{
+			iShowImage(540, 12, 290, 500, characterSlightRight);
+		}
+		else if (characterFrame == 8)
+		{
+			iShowImage(540, 12, 290, 500, characterNormal);
 		}
 		if (hoverButton == 1)
 			iShowImage(125, 345, 280, 90, buttonPlay);
@@ -154,11 +161,6 @@ void DrawLevelSelection()
 	else
 		iShowImage(365, 160, 270, 80, buttonLevel3);
 
-	if (hoverLevel == 3)
-		iShowImage(360, 155, 280, 90, buttonLevel3);
-	else
-		iShowImage(365, 160, 270, 80, buttonLevel3);
-
 	iShowImage(60, 500, 140, 50, backButton);
 }
 void DrawCredits()
@@ -174,13 +176,13 @@ void updateCharacterAnimation()
 {
 	characterTimer++;
 
-	if (characterTimer >= 17)
+	if (characterTimer >= 8)
 	{
 		characterTimer = 0;
 
 		characterFrame++;
 
-		if (characterFrame > 4)
+		if (characterFrame > 8)
 		{
 			characterFrame = 0;
 		}
