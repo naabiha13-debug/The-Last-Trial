@@ -152,7 +152,10 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 2
 				currentScreen = 5;
 				loadLevel2Assets();
+				generateBridgeGaps();
+				initBridge();
 				stopMenuMusic();
+				
 			}
 
 			else if (mx >= 60 && mx <= 200 &&
@@ -223,8 +226,13 @@ void fixedUpdate()
 	}
 	if (currentScreen == 5)
 	{
-		level2Update();
+		//updatePlayer();
+		updateLevel2();
+		updateBridgeFall();
+		updateBrokenTiles();
+		updatePlayerFall();
 	}
+	
 	// Free-roam WASD/arrow controls (used outside level 1)
 	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP))
 	{

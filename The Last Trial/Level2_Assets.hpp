@@ -4,6 +4,8 @@
 
 int playerBg[5];
 int botBg[5];
+int bridgeTile;
+int playeridle;
 
 void loadLevel2Assets()
 {
@@ -18,5 +20,8 @@ void loadLevel2Assets()
 	botBg[2] = iLoadImage("Image//b3.png");
 	botBg[3] = iLoadImage("Image//b4.png");
 	botBg[4] = iLoadImage("Image//b5.png");
+	bridgeTile = iLoadImage("Image//g.png");
+
+	playeridle = iLoadImage("Image//player_idle.png");
 }
 #endif
