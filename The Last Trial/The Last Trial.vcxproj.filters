@@ -75,6 +75,9 @@
     <ClInclude Include="Level2_Logic.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Level2_Character.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iMain.cpp">

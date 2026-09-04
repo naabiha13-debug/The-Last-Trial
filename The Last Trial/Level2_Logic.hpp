@@ -3,10 +3,13 @@
 
 #include "iGraphics.h"
 #include "Level2_Config.hpp"
-#include "Level2_Player.hpp"
+#include "Level2_Character.hpp"
 
 
 int playerBgOffset = 0;
+
+// Bot's own scroll offset (bot will move itself later — for now stays 0)
+int botBgOffset = 0;
 
 
 // =====================================
@@ -35,6 +38,136 @@ bool playerFalling = false;
 
 
 // =====================================
+// BOT (the Level 1 winner) — auto-runs in its own screen
+// =====================================
+
+int botX = 100;
+int botY = L2_BOT_GROUND_Y;
+int botRunFrame = 0;
+DWORD botRunFrameTime = 0;
+const int BOT_RUN_FRAME_DELAY = 80;
+const int BOT_RUN_SPEED = 15;
+
+bool botFalling = false;
+
+void updateBotRun()
+{
+	if (botFalling)
+		return;
+
+	// Gate movement/animation by real elapsed time, not by how many
+	// times this gets called — fixedUpdate() fires on every keypress
+	// (even the jump key), so without this gate the bot would creep
+	// extra whenever a non-move key is pressed.
+	DWORD now = GetTickCount();
+
+	if (now - botRunFrameTime < BOT_RUN_FRAME_DELAY)
+		return;
+
+	botRunFrameTime = now;
+
+	if (botX >= 400 && botBgOffset < 4000)
+	{
+		botBgOffset += BOT_RUN_SPEED;
+	}
+	else if (botBgOffset >= 4000 && botX < 950)
+	{
+		botX += BOT_RUN_SPEED;
+	}
+	else if (botX < 400)
+	{
+		botX += BOT_RUN_SPEED;
+	}
+
+	botRunFrame = (botRunFrame + 1) % 8;
+}
+
+
+// =====================================
+// BOT FALLING (bot doesn't jump — falls through gaps)
+// =====================================
+
+bool isBotOnBridge()
+{
+	int botWorldX = botX + botBgOffset;
+	int botCenterX = botWorldX + 25;
+
+	// Before bridge
+	if (botCenterX <= 180)
+		return true;
+
+	// After bridge
+	if (botCenterX >= 4820)
+		return true;
+
+	int i = (botCenterX - 180) / 110;
+
+	if (i < 0 || i >= 45)
+		return true;
+
+	// Permanent gap
+	if (bridgeGap[i])
+		return false;
+
+	// Tile has completely fallen
+	if (bridgeState[i] == 2)
+		return false;
+
+	// Same tile, mirrored onto the bot's side (matches drawBridgeBot)
+	int playerTileY = L2_PLAYER_TILE_Y;
+
+	if (bridgeState[i] == 1)
+		playerTileY = (int)brokenTileY[i];
+
+	int fallenAmount = L2_PLAYER_TILE_Y - playerTileY;
+	int tileY = L2_BOT_TILE_Y - fallenAmount;
+
+	if (botY >= tileY && botY <= tileY + 10)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+
+void updateBotFall()
+{
+	int botWorldX = botX + botBgOffset;
+
+	// Before bridge
+	if (botWorldX + 50 <= 180)
+	{
+		botFalling = false;
+		return;
+	}
+
+	// After bridge
+	if (botWorldX >= 4820)
+	{
+		botFalling = false;
+		return;
+	}
+
+	if (isBotOnBridge())
+	{
+		botFalling = false;
+		return;
+	}
+
+	// Bot is falling
+	botFalling = true;
+
+	botY -= 5;
+
+	if (botY + 80 < 0)
+	{
+		botFalling = false;
+	}
+}
+
+
+// =====================================
 // PLAYER MOVEMENT
 // =====================================
 
@@ -43,11 +176,12 @@ void updateLevel2()
 	if (playerFalling)
 		return;
 
+	bool movingRight = (GetAsyncKeyState('D') & 0x8000) ||
+		(GetAsyncKeyState(VK_RIGHT) & 0x8000);
 
 	// Move right only
 
-	if (GetAsyncKeyState('D') & 0x8000 ||
-		GetAsyncKeyState(VK_RIGHT) & 0x8000)
+	if (movingRight)
 	{
 		if (playerX >= 400 && playerBgOffset < 4000)
 		{
@@ -62,6 +196,8 @@ void updateLevel2()
 			playerX += 15;
 		}
 	}
+
+	updatePlayerAnimation(movingRight);
 }
 
 
@@ -171,61 +307,57 @@ bool isPlayerOnBridge()
 {
 	int playerWorldX = playerX + playerBgOffset;
 
-	int playerLeft = playerWorldX;
-	int playerRight = playerWorldX + 50;
+	// Use the player's center point instead of checking the full
+	// sprite width — avoids false "fall" when the player straddles
+	// the border between a gap tile and a solid tile after a jump.
+	int playerCenterX = playerWorldX + 25;
 
 	// Before bridge
-	if (playerRight <= 180)
+	if (playerCenterX <= 180)
 		return true;
 
 	// After bridge
-	if (playerLeft >= 4820)
+	if (playerCenterX >= 4820)
 		return true;
 
-	for (int i = 0; i < 45; i++)
-	{
-		int tileLeft = 180 + i * 110;
-		int tileRight = tileLeft + 110;
+	int i = (playerCenterX - 180) / 110;
 
-		// Player is not over this tile
-		if (playerRight <= tileLeft ||
-			playerLeft >= tileRight)
-		{
-			continue;
-		}
+	if (i < 0 || i >= 45)
+		return true;
 
-		// This position is a permanent gap
-		if (bridgeGap[i])
-			return false;
-
-		// Tile has completely fallen
-		if (bridgeState[i] == 2)
-			return false;
-
-		int tileY = 394;
-
-		// Tile is currently falling
-		if (bridgeState[i] == 1)
-		{
-			tileY = (int)brokenTileY[i];
-		}
-
-		// Player feet are on the tile
-		if (playerY >= tileY &&
-			playerY <= tileY + 10)
-		{
-			return true;
-		}
-
+	// This position is a permanent gap
+	if (bridgeGap[i])
 		return false;
+
+	// Tile has completely fallen
+	if (bridgeState[i] == 2)
+		return false;
+
+	int tileY = 394;
+
+	// Tile is currently falling
+	if (bridgeState[i] == 1)
+	{
+		tileY = (int)brokenTileY[i];
 	}
 
-	return true;
+	// Player feet are on the tile
+	if (playerY >= tileY &&
+		playerY <= tileY + 10)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 
 void updatePlayerFall()
 {
+	// Player is deliberately airborne (jumping) — don't treat this as falling
+	if (playerJumping)
+		return;
+
 	int playerWorldX = playerX + playerBgOffset;
 
 	// Before bridge

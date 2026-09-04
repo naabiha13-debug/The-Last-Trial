@@ -5,6 +5,6 @@
 #include "Level2_Config.hpp"
 #include "Level2_Render.hpp"
 #include "Level2_Logic.hpp"
-#include "Level2_Player.hpp"
+#include "Level2_Character.hpp"
 
 #endif

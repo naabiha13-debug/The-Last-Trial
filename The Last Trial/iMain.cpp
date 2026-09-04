@@ -228,6 +228,7 @@ void fixedUpdate()
 	{
 		//updatePlayer();
 		updateLevel2();
+		updateBotRun();
 		updateBridgeFall();
 		updateBrokenTiles();
 		updatePlayerFall();
