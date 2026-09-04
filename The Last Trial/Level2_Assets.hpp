@@ -11,6 +11,8 @@ int playerRunImg[8];
 int playerJumpImg[5];
 int playerFallImg[3];
 
+int biscuitImg;
+
 // bot1 (qualifiedBot == 0) and bot2 (qualifiedBot == 1) run cycles
 int botRunImg[2][8];
 
@@ -67,5 +69,7 @@ void loadLevel2Assets()
 	botRunImg[1][5] = iLoadImage("Image//bot2_run_6.png");
 	botRunImg[1][6] = iLoadImage("Image//bot2_run_7.png");
 	botRunImg[1][7] = iLoadImage("Image//bot2_run_8.png");
+
+	biscuitImg = iLoadImage("Image//biscuit.png");
 }
 #endif

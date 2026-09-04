@@ -36,6 +36,79 @@ DWORD bridgeStartTime;
 
 bool playerFalling = false;
 
+// =====================================
+// HEALTH SYSTEM
+// =====================================
+
+float playerHealth = L2_HEALTH_MAX;
+float botHealth = L2_HEALTH_MAX;
+
+DWORD playerHealthTimer;
+DWORD botHealthTimer;
+
+int biscuitWorldX[L2_BISCUIT_COUNT] = { 700, 1500, 2300, 3100, 3700, 4400 };
+
+bool playerBiscuitCollected[L2_BISCUIT_COUNT];
+bool botBiscuitCollected[L2_BISCUIT_COUNT];
+
+void initHealthSystem()
+{
+	playerHealth = L2_HEALTH_MAX;
+	botHealth = L2_HEALTH_MAX;
+
+	playerHealthTimer = GetTickCount();
+	botHealthTimer = GetTickCount();
+
+	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
+	{
+		playerBiscuitCollected[i] = false;
+		botBiscuitCollected[i] = false;
+	}
+}
+
+int getPlayerRunSpeed()
+{
+	float factor = playerHealth / L2_HEALTH_MAX;
+
+	if (factor < L2_MIN_SPEED_FACTOR)
+		factor = L2_MIN_SPEED_FACTOR;
+
+	return (int)(L2_BASE_RUN_SPEED * factor);
+}
+
+int getBotRunSpeed()
+{
+	float factor = botHealth / L2_HEALTH_MAX;
+
+	if (factor < L2_MIN_SPEED_FACTOR)
+		factor = L2_MIN_SPEED_FACTOR;
+
+	return (int)(L2_BASE_RUN_SPEED * factor);
+}
+
+void updateHealthDecay()
+{
+	DWORD now = GetTickCount();
+
+	if (now - playerHealthTimer >= L2_HEALTH_DECAY_INTERVAL)
+	{
+		playerHealthTimer = now;
+		playerHealth -= L2_HEALTH_DECAY_AMOUNT;
+
+		if (playerHealth < 0)
+			playerHealth = 0;
+	}
+
+	if (now - botHealthTimer >= L2_HEALTH_DECAY_INTERVAL)
+	{
+		botHealthTimer = now;
+		botHealth -= L2_HEALTH_DECAY_AMOUNT;
+
+		if (botHealth < 0)
+			botHealth = 0;
+	}
+}
+
 
 // =====================================
 // BOT (the Level 1 winner) — auto-runs in its own screen
@@ -55,33 +128,70 @@ void updateBotRun()
 	if (botFalling)
 		return;
 
-	// Gate movement/animation by real elapsed time, not by how many
-	// times this gets called — fixedUpdate() fires on every keypress
-	// (even the jump key), so without this gate the bot would creep
-	// extra whenever a non-move key is pressed.
 	DWORD now = GetTickCount();
-
 	if (now - botRunFrameTime < BOT_RUN_FRAME_DELAY)
 		return;
 
 	botRunFrameTime = now;
 
+	int speed = getBotRunSpeed();
+
 	if (botX >= 400 && botBgOffset < 4000)
 	{
-		botBgOffset += BOT_RUN_SPEED;
+		botBgOffset += speed;
 	}
 	else if (botBgOffset >= 4000 && botX < 950)
 	{
-		botX += BOT_RUN_SPEED;
+		botX += speed;
 	}
 	else if (botX < 400)
 	{
-		botX += BOT_RUN_SPEED;
+		botX += speed;
 	}
 
 	botRunFrame = (botRunFrame + 1) % 8;
 }
 
+void checkPlayerBiscuitCatch()
+{
+	int playerWorldX = playerX + playerBgOffset + 25; // character center
+
+	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
+	{
+		if (playerBiscuitCollected[i])
+			continue;
+
+		if (abs(playerWorldX - biscuitWorldX[i]) <= L2_BISCUIT_CATCH_RANGE)
+		{
+			playerBiscuitCollected[i] = true;
+
+			playerHealth += L2_HEALTH_GAIN_AMOUNT;
+			if (playerHealth > L2_HEALTH_MAX)
+				playerHealth = L2_HEALTH_MAX;
+		}
+	}
+}
+
+
+void checkBotBiscuitCatch()
+{
+	int botWorldX = botX + botBgOffset + 25;
+
+	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
+	{
+		if (botBiscuitCollected[i])
+			continue;
+
+		if (abs(botWorldX - biscuitWorldX[i]) <= L2_BISCUIT_CATCH_RANGE)
+		{
+			botBiscuitCollected[i] = true;
+
+			botHealth += L2_HEALTH_GAIN_AMOUNT;
+			if (botHealth > L2_HEALTH_MAX)
+				botHealth = L2_HEALTH_MAX;
+		}
+	}
+}
 
 // =====================================
 // BOT FALLING (bot doesn't jump — falls through gaps)
@@ -179,21 +289,21 @@ void updateLevel2()
 	bool movingRight = (GetAsyncKeyState('D') & 0x8000) ||
 		(GetAsyncKeyState(VK_RIGHT) & 0x8000);
 
-	// Move right only
+	int speed = getPlayerRunSpeed();
 
 	if (movingRight)
 	{
 		if (playerX >= 400 && playerBgOffset < 4000)
 		{
-			playerBgOffset += 15;
+			playerBgOffset += speed;
 		}
 		else if (playerBgOffset >= 4000 && playerX < 950)
 		{
-			playerX += 15;
+			playerX += speed;
 		}
 		else if (playerX < 400)
 		{
-			playerX += 15;
+			playerX += speed;
 		}
 	}
 

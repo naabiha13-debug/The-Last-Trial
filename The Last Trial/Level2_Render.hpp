@@ -9,6 +9,19 @@
 #include "Level2_Logic.hpp"
 
 
+char tickerText[] = "  THE TRIAL IS GOING ON - YOU VS THE PLAYER - A SINGLE MISSTEP WILL BE YOUR LAST.     ";
+
+int l2TextPixelWidth(char *str, void *font)
+{
+	int width = 0;
+
+	for (char *ch = str; *ch != '\0'; ch++)
+		width += glutBitmapWidth(font, (int)(unsigned char)*ch);
+
+	return width;
+}
+
+
 void drawPlayerBg()
 {
 	for (int i = 0; i < L2_BG_TILE_COUNT; i++)
@@ -88,6 +101,26 @@ void drawBridge()
 	}
 }
 
+void drawScreenPartition()
+{
+	int barY = 293;
+	int barH = 34;
+
+	// Black partition
+	iSetColor(0, 0, 0);
+	iFilledRectangle(0, barY, L2_SCREEN_WIDTH, barH);
+
+	// Fixed centered text
+	void *tickerFont = GLUT_BITMAP_9_BY_15;
+
+	int textWidth = l2TextPixelWidth(tickerText, tickerFont);
+
+	int textX = (L2_SCREEN_WIDTH - textWidth) / 2;
+	int textY = barY + (barH - 15) / 2;
+
+	iSetColor(255, 255, 255);
+	iText(textX, textY, tickerText, tickerFont);
+}
 
 void drawBridgeBot()
 {
@@ -155,6 +188,67 @@ void drawBot()
 	glDisable(GL_SCISSOR_TEST);
 }
 
+void drawBiscuits()
+{
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, L2_VIEWPORT_HEIGHT, L2_SCREEN_WIDTH, L2_VIEWPORT_HEIGHT);
+
+	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
+	{
+		if (playerBiscuitCollected[i])
+			continue;
+
+		int screenX = biscuitWorldX[i] - playerBgOffset;
+		iShowImage(screenX, 460, 30, 30, biscuitImg);
+	}
+
+	glDisable(GL_SCISSOR_TEST);
+}
+
+
+void drawBiscuitsBot()
+{
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(0, 0, L2_SCREEN_WIDTH, L2_VIEWPORT_HEIGHT);
+
+	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
+	{
+		if (botBiscuitCollected[i])
+			continue;
+
+		int screenX = biscuitWorldX[i] - botBgOffset;
+		iShowImage(screenX, 150, 30, 30, biscuitImg);
+	}
+
+	glDisable(GL_SCISSOR_TEST);
+}
+
+
+void drawHealthBars()
+{
+	int barWidth = 200;
+	int barHeight = 18;
+
+	// Player HP bar
+	int playerBarX = 20, playerBarY = 560;
+	iSetColor(60, 60, 60);
+	iFilledRectangle(playerBarX, playerBarY, barWidth, barHeight);
+	int playerFill = (int)(barWidth * (playerHealth / L2_HEALTH_MAX));
+	iSetColor(0, 200, 0);
+	iFilledRectangle(playerBarX, playerBarY, playerFill, barHeight);
+	iSetColor(255, 255, 255);
+	iText(playerBarX, playerBarY + barHeight + 12, "PLAYER HP", GLUT_BITMAP_9_BY_15);
+
+	// Bot HP bar
+	int botBarX = 20, botBarY = 270;
+	iSetColor(60, 60, 60);
+	iFilledRectangle(botBarX, botBarY, barWidth, barHeight);
+	int botFill = (int)(barWidth * (botHealth / L2_HEALTH_MAX));
+	iSetColor(200, 0, 0);
+	iFilledRectangle(botBarX, botBarY, botFill, barHeight);
+	iSetColor(255, 255, 255);
+	iText(botBarX, botBarY + barHeight + 12, "BOT HP", GLUT_BITMAP_9_BY_15);
+}
 
 void DrawLevel2()
 {
@@ -163,6 +257,12 @@ void DrawLevel2()
 	drawBotBg();
 
 	drawBridge();
+
+	drawBiscuits();
+
+	drawBiscuitsBot();
+
+	drawScreenPartition();
 
 	drawBridgeBot();
 
