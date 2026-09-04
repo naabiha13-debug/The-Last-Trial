@@ -95,6 +95,7 @@
     <ClInclude Include="Level1_Logic.hpp" />
     <ClInclude Include="Level1_Render.hpp" />
     <ClInclude Include="Level2.hpp" />
+    <ClInclude Include="Level2_Bot.hpp" />
     <ClInclude Include="Level2_Character.hpp" />
     <ClInclude Include="Level2_Assets.hpp" />
     <ClInclude Include="Level2_Config.hpp" />

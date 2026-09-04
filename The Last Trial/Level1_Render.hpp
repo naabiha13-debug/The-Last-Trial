@@ -46,38 +46,6 @@ void drawTileGlow(
 	iRectangle(x, y, w, h);
 }
 
-void drawGridPartitions()
-{
-	// Set partition color to black
-	iSetColor(0, 0, 0);
-
-	// Draw vertical partitions
-	for (int c = 1; c < COLS; c++)
-	{
-		int x = getTileLeft(c);
-
-		iFilledRectangle(
-			x - 2,
-			GRID_Y,
-			4,
-			GRID_HEIGHT
-			);
-	}
-
-	// Draw horizontal partitions
-	for (int r = 1; r < ROWS; r++)
-	{
-		int y = getTileTop(r);
-
-		iFilledRectangle(
-			GRID_X,
-			y - 2,
-			GRID_WIDTH,
-			4
-			);
-	}
-}
-
 void drawTiles()
 {
 	for (int r = 0; r < ROWS; r++)
@@ -244,12 +212,23 @@ void drawHUD()
 
 void drawPhasePrompt()
 {
-	iSetColor(230, 200, 90);
+	char *text;
+
+	if (tilesVisible)
+	{
+		iSetColor(230, 200, 90);
+		text = "MEMORIZE THE TILES";
+	}
+	else
+	{
+		iSetColor(150, 220, 160);
+		text = "GO! AVOID RED, GRAB GREEN";
+	}
 
 	iTextCentered(
 		LEVEL1_WIDTH / 2,
 		GRID_Y + GRID_HEIGHT + 26,
-		"MEMORIZE THE TILES",
+		text,
 		GLUT_BITMAP_9_BY_15);
 }
 
@@ -324,10 +303,6 @@ void drawLevel1()
 		45, 45, 45);
 
 	drawTiles();
-
-	// BLACK PARTITIONS 
-	drawGridPartitions(); 
-	drawCharacter(player);
 
 	drawCharacter(player);
 

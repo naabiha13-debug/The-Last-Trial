@@ -10,8 +10,11 @@ int playeridle;
 int playerRunImg[8];
 int playerJumpImg[5];
 int playerFallImg[3];
+int botJumpImg[2][5];
+int botFallImg[2][3];
 
 int biscuitImg;
+int playerCatchImg[2];
 
 // bot1 (qualifiedBot == 0) and bot2 (qualifiedBot == 1) run cycles
 int botRunImg[2][8];
@@ -71,5 +74,31 @@ void loadLevel2Assets()
 	botRunImg[1][7] = iLoadImage("Image//bot2_run_8.png");
 
 	biscuitImg = iLoadImage("Image//biscuit.png");
+
+	playerCatchImg[0] = iLoadImage("Image//player_catch1.png");
+	playerCatchImg[1] = iLoadImage("Image//player_catch2.png");
+
+
+
+	botJumpImg[0][0] = iLoadImage("Image//bot1_jump_1.png");
+	botJumpImg[0][1] = iLoadImage("Image//bot1_jump_2.png");
+	botJumpImg[0][2] = iLoadImage("Image//bot1_jump_3.png");
+	botJumpImg[0][3] = iLoadImage("Image//bot1_jump_4.png");
+	botJumpImg[0][4] = iLoadImage("Image//bot1_jump_5.png");
+
+	botFallImg[0][0] = iLoadImage("Image//bot1_fall_1.png");
+	botFallImg[0][1] = iLoadImage("Image//bot1_fall_2.png");
+	botFallImg[0][2] = iLoadImage("Image//bot1_fall_3.png");
+
+	botJumpImg[1][0] = iLoadImage("Image//bot2_jump_1.png");
+	botJumpImg[1][1] = iLoadImage("Image//bot2_jump_2.png");
+	botJumpImg[1][2] = iLoadImage("Image//bot2_jump_3.png");
+	botJumpImg[1][3] = iLoadImage("Image//bot2_jump_4.png");
+	botJumpImg[1][4] = iLoadImage("Image//bot2_jump_5.png");
+
+	botFallImg[1][0] = iLoadImage("Image//bot2_fall_1.png");
+	botFallImg[1][1] = iLoadImage("Image//bot2_fall_2.png");
+	botFallImg[1][2] = iLoadImage("Image//bot2_fall_3.png");
+
 }
 #endif

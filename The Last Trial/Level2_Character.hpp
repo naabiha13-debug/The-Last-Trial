@@ -4,8 +4,12 @@
 #include "iGraphics.h"
 #include "Level2_Config.hpp"
 #include "Level2_Assets.hpp"
+#include "Level2_Config.hpp"
 
 int playerX = 100;
+const int PLAYER_RUN_SPEED = 15;      
+const int PLAYER_MOVE_DELAY = 80;       
+DWORD playerMoveTime = 0;
 
 // Defined later in Level2_Logic.hpp — forward-declared here so
 // drawPlayer() can use it to pick the falling animation.
@@ -29,12 +33,25 @@ const int PLAYER_RUN_FRAME_DELAY = 80; // ms per run frame
 
 bool playerJumping = false;
 int playerJumpFrame = 0;
+
 DWORD playerJumpStartTime = 0;
 const int PLAYER_JUMP_FRAME_DELAY = 100; // ms per jump frame (5 frames total)
 const int PLAYER_JUMP_DURATION = 5 * PLAYER_JUMP_FRAME_DELAY; // total jump time
 const float PLAYER_JUMP_HEIGHT = 70.0f; // how high the player rises, in pixels
 
 bool jumpKeyWasDown = false; // for edge detection, so holding Up doesn't spam jumps
+
+
+// === BISCUIT CATCH ANIMATION STATE ===
+bool playerCatching = false;
+DWORD playerCatchStartTime = 0;
+const int PLAYER_CATCH_DURATION = 350; // ms per catch animation
+
+void triggerPlayerCatch()
+{
+	playerCatching = true;
+	playerCatchStartTime = GetTickCount();
+}
 
 
 void startPlayerJump()
@@ -47,7 +64,7 @@ void startPlayerJump()
 	playerJumpStartTime = GetTickCount();
 }
 
-
+float getPlayerSpeedFactor();
 // Call this every frame from updateLevel2(), passing whether the player
 // is currently holding the move-right key.
 void updatePlayerAnimation(bool isMovingRight)
@@ -97,7 +114,9 @@ void updatePlayerAnimation(bool isMovingRight)
 		playerAnimState = PLAYER_RUNNING;
 
 		DWORD now = GetTickCount();
-		if (now - playerRunFrameTime >= PLAYER_RUN_FRAME_DELAY)
+		
+		int animDelay = (int)(PLAYER_RUN_FRAME_DELAY / getPlayerSpeedFactor());
+		if (now - playerRunFrameTime >= (DWORD)animDelay)
 		{
 			playerRunFrame = (playerRunFrame + 1) % 8;
 			playerRunFrameTime = now;
@@ -126,6 +145,27 @@ void drawPlayer()
 		int fallFrame = (GetTickCount() / 120) % 3;
 		img = playerFallImg[fallFrame];
 	}
+	else if (playerCatching)
+	{
+		DWORD elapsed = GetTickCount() - playerCatchStartTime;
+		if (elapsed >= PLAYER_CATCH_DURATION)
+		{
+			playerCatching = false;
+			if (playerAnimState == PLAYER_JUMPING)
+				img = playerJumpImg[playerJumpFrame];
+			else if (playerAnimState == PLAYER_RUNNING)
+				img = playerRunImg[playerRunFrame];
+			else
+				img = playeridle;
+		}
+		else
+		{
+			int catchFrame = elapsed / (PLAYER_CATCH_DURATION / 2);
+			if (catchFrame > 1)
+				catchFrame = 1;
+			img = playerCatchImg[catchFrame];
+		}
+	}
 	else if (playerAnimState == PLAYER_JUMPING)
 		img = playerJumpImg[playerJumpFrame];
 	else if (playerAnimState == PLAYER_RUNNING)
@@ -138,5 +178,15 @@ void drawPlayer()
 	glDisable(GL_SCISSOR_TEST);
 }
 
+float playerHealth = L2_HEALTH_MAX;
+DWORD playerHealthDecayTime = 0;
+
+float getPlayerSpeedFactor()
+{
+	float factor = playerHealth / L2_HEALTH_MAX;
+	if (factor < 0.25f)
+		factor = 0.25f;
+	return factor;
+}
 
 #endif

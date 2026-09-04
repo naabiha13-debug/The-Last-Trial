@@ -18,6 +18,7 @@ const int L2_BOT_TILE_Y = 92;
 // Bot's feet position when standing on a bridge tile (tile top = L2_BOT_TILE_Y + tile height)
 const int L2_BOT_GROUND_Y = L2_BOT_TILE_Y + 7;
 
+
 // =====================================
 // HEALTH SYSTEM
 // =====================================
@@ -26,10 +27,9 @@ const DWORD L2_HEALTH_DECAY_INTERVAL = 3000;
 const float L2_HEALTH_DECAY_AMOUNT = 15.0f;
 const float L2_HEALTH_GAIN_AMOUNT = 35.0f;
 const float L2_MIN_SPEED_FACTOR = 0.3f;
-
 const int L2_BASE_RUN_SPEED = 15;
-
 const int L2_BISCUIT_COUNT = 6;
 const int L2_BISCUIT_CATCH_RANGE = 40;
+const int L2_BISCUIT_HEIGHT_OFFSET = 70;   
 
 #endif
