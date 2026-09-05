@@ -14,7 +14,7 @@ int botY = L2_BOT_GROUND_Y;
 int botRunFrame = 0;
 DWORD botRunFrameTime = 0;
 const int BOT_RUN_FRAME_DELAY = 80;
-const int BOT_RUN_SPEED = 22;
+const int BOT_RUN_SPEED = 25;
 
 bool botFalling = false;
 
@@ -44,11 +44,11 @@ float getBotSpeedFactor()
 
 void advanceBot(int amount)
 {
-	if (botX >= 400 && botBgOffset < 4000)
+	if (botX >= 400 && botBgOffset < 5000)
 	{
 		botBgOffset += amount;
 	}
-	else if (botBgOffset >= 4000 && botX < 950)
+	else if (botBgOffset >= 5000 && botX < 950)
 	{
 		botX += amount;
 	}
@@ -62,7 +62,7 @@ void advanceBot(int amount)
 
 bool isGapTile(int i)
 {
-	if (i < 0 || i >= 45)
+	if (i < 0 || i >= L2_BRIDGE_TILE_COUNT)
 		return false;
 
 	return bridgeGap[i] || bridgeState[i] == 2;
@@ -186,19 +186,30 @@ void updateBotJump()
 			rand() % (BOT_JUMP_LOOKAHEAD_MAX - BOT_JUMP_LOOKAHEAD_MIN);
 
 		int aheadX = botCenterX + lookahead;
-		int i = (aheadX - 180) / 110;
 
-		if (aheadX > 180 && aheadX < 4820 && isGapTile(i))
+		if (aheadX > 5819)
+			aheadX = 5819;
+
+		if (aheadX > 180)
 		{
+			int i = (aheadX - 180) / 110;
 
-			int endIndex = i;
-			while (endIndex + 1 < 45 && isGapTile(endIndex + 1))
-				endIndex++;
+			if (i >= 0 && i < L2_BRIDGE_TILE_COUNT && isGapTile(i))
+			{
+				int endIndex = i;
 
-			bool mistake = (rand() % 100) < BOT_MISTAKE_CHANCE_PERCENT;
-			startBotJump(endIndex, mistake);
+				while (endIndex + 1 < L2_BRIDGE_TILE_COUNT &&
+					isGapTile(endIndex + 1))
+				{
+					endIndex++;
+				}
+
+				bool mistake =
+					(rand() % 100) < BOT_MISTAKE_CHANCE_PERCENT;
+
+				startBotJump(endIndex, mistake);
+			}
 		}
-		return;
 	}
 
 	DWORD elapsed = GetTickCount() - botJumpStartTime;
@@ -301,12 +312,12 @@ bool isBotOnBridge()
 		return true;
 
 	// After bridge
-	if (botCenterX >= 4820)
+	if (botCenterX >= 5820)
 		return true;
 
 	int i = (botCenterX - 180) / 110;
 
-	if (i < 0 || i >= 45)
+	if (i < 0 || i >= L2_BRIDGE_TILE_COUNT)
 		return true;
 
 	// Permanent gap
@@ -351,7 +362,7 @@ void updateBotFall()
 	}
 
 	// After bridge
-	if (botWorldX >= 4820)
+	if (botWorldX >= 5820)
 	{
 		botFalling = false;
 		return;

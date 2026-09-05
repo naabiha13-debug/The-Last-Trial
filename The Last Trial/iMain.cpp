@@ -154,6 +154,7 @@ void iMouse(int button, int state, int mx, int my)
 				loadLevel2Assets();
 				generateBridgeGaps();
 				initBridge();
+				startLevel2Intro();
 				
 				stopMenuMusic();
 				
@@ -227,14 +228,18 @@ void fixedUpdate()
 	}
 	if (currentScreen == 5)
 	{
-		updateLevel2();
-		updateBotRun();
-		updateBridgeFall();
-		updateBrokenTiles();
-		updatePlayerFall();
-		updateBotJump();
-		updateBotFall();
-		
+		updateLevel2Intro();
+
+		if (!level2Intro)
+		{
+			updateLevel2();
+			updateBotRun();
+			updateBridgeFall();
+			updateBrokenTiles();
+			updatePlayerFall();
+			updateBotJump();
+			updateBotFall();
+		}
 	}
 	
 	// Free-roam WASD/arrow controls (used outside level 1)

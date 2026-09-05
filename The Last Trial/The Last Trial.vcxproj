@@ -99,6 +99,7 @@
     <ClInclude Include="Level2_Character.hpp" />
     <ClInclude Include="Level2_Assets.hpp" />
     <ClInclude Include="Level2_Config.hpp" />
+    <ClInclude Include="Level2_Intro.hpp" />
     <ClInclude Include="Level2_Logic.hpp" />
     <ClInclude Include="Level2_Render.hpp" />
     <ClInclude Include="menu.hpp" />

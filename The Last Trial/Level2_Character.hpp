@@ -7,7 +7,7 @@
 #include "Level2_Config.hpp"
 
 int playerX = 100;
-const int PLAYER_RUN_SPEED = 15;      
+const int PLAYER_RUN_SPEED = 7;      
 const int PLAYER_MOVE_DELAY = 80;       
 DWORD playerMoveTime = 0;
 
@@ -184,8 +184,8 @@ DWORD playerHealthDecayTime = 0;
 float getPlayerSpeedFactor()
 {
 	float factor = playerHealth / L2_HEALTH_MAX;
-	if (factor < 0.25f)
-		factor = 0.25f;
+	if (factor < L2_MIN_SPEED_FACTOR)   
+		factor = L2_MIN_SPEED_FACTOR;
 	return factor;
 }
 

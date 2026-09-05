@@ -4,6 +4,7 @@
 #include "iGraphics.h"
 
 #include "Level2_Assets.hpp"
+#include "Level2_Intro.hpp"
 #include "Level2_Config.hpp"
 #include "Level2_Character.hpp"
 #include "Level2_Logic.hpp"
@@ -47,10 +48,10 @@ void drawBotBg()
 void drawBridge()
 {
 	int startX = 180;
-	int bridgeEnd = 5000 - 180;
+	int bridgeEnd = 6000 - 180;
 	int tileWidth = 110;
 
-	for (int i = 0;; i++)
+	for (int i = 0; i < L2_BRIDGE_TILE_COUNT; i++)
 	{
 		int worldX = startX + i * tileWidth;
 
@@ -93,10 +94,10 @@ void drawBridge()
 void drawBridgeBot()
 {
 	int startX = 180;
-	int bridgeEnd = 5000 - 180;
+	int bridgeEnd = 6000 - 180;
 	int tileWidth = 110;
 
-	for (int i = 0;; i++)
+	for (int i = 0; i < L2_BRIDGE_TILE_COUNT; i++)
 	{
 		int worldX = startX + i * tileWidth;
 
@@ -139,6 +140,7 @@ void drawBridgeBot()
 	}
 }
 
+
 void drawBot()
 {
 	if (botFalling && botY + 80 < 0)
@@ -158,10 +160,12 @@ void drawBot()
 	{
 		DWORD elapsed = GetTickCount() - botJumpStartTime;
 		DWORD frameDelay = botJumpDuration / 5;
+
 		if (frameDelay == 0)
 			frameDelay = 1;
 
 		int jumpFrame = elapsed / frameDelay;
+
 		if (jumpFrame > 4)
 			jumpFrame = 4;
 
@@ -177,10 +181,16 @@ void drawBot()
 	glDisable(GL_SCISSOR_TEST);
 }
 
+
 void drawBiscuitsPlayer()
 {
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(0, L2_VIEWPORT_HEIGHT, L2_SCREEN_WIDTH, L2_VIEWPORT_HEIGHT);
+	glScissor(
+		0,
+		L2_VIEWPORT_HEIGHT,
+		L2_SCREEN_WIDTH,
+		L2_VIEWPORT_HEIGHT
+		);
 
 	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
 	{
@@ -190,16 +200,28 @@ void drawBiscuitsPlayer()
 		int screenX = biscuitWorldX[i] - playerBgOffset;
 		int screenY = PLAYER_GROUND_Y + L2_BISCUIT_HEIGHT_OFFSET;
 
-		iShowImage(screenX, screenY, 30, 30, biscuitImg);
+		iShowImage(
+			screenX,
+			screenY,
+			30,
+			30,
+			biscuitImg
+			);
 	}
 
 	glDisable(GL_SCISSOR_TEST);
 }
 
+
 void drawBiscuitsBot()
 {
 	glEnable(GL_SCISSOR_TEST);
-	glScissor(0, 0, L2_SCREEN_WIDTH, L2_VIEWPORT_HEIGHT);
+	glScissor(
+		0,
+		0,
+		L2_SCREEN_WIDTH,
+		L2_VIEWPORT_HEIGHT
+		);
 
 	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
 	{
@@ -209,11 +231,18 @@ void drawBiscuitsBot()
 		int screenX = biscuitWorldX[i] - botBgOffset;
 		int screenY = L2_BOT_GROUND_Y + L2_BISCUIT_HEIGHT_OFFSET;
 
-		iShowImage(screenX, screenY, 30, 30, biscuitImg);
+		iShowImage(
+			screenX,
+			screenY,
+			30,
+			30,
+			biscuitImg
+			);
 	}
 
 	glDisable(GL_SCISSOR_TEST);
 }
+
 
 void drawLevel2HUD()
 {
@@ -245,7 +274,8 @@ void drawLevel2HUD()
 		boxX + 12,
 		boxY + boxH - 17,
 		"457 HEALTH",
-		GLUT_BITMAP_8_BY_13);
+		GLUT_BITMAP_8_BY_13
+		);
 
 
 	// Health value
@@ -256,8 +286,8 @@ void drawLevel2HUD()
 		sizeof(playerHealthText),
 		"%d / %d",
 		(int)playerHealth,
-		(int)L2_HEALTH_MAX);
-
+		(int)L2_HEALTH_MAX
+		);
 
 	iSetColor(235, 220, 245);
 
@@ -265,7 +295,8 @@ void drawLevel2HUD()
 		boxX + 12,
 		boxY + 10,
 		playerHealthText,
-		GLUT_BITMAP_8_BY_13);
+		GLUT_BITMAP_8_BY_13
+		);
 
 
 	// Health bar
@@ -276,11 +307,13 @@ void drawLevel2HUD()
 
 	// Empty bar
 	iSetColor(15, 10, 20);
+
 	iFilledRectangle(
 		barX,
 		barY,
 		barW,
-		barH);
+		barH
+		);
 
 	// Filled health
 	int playerBarW =
@@ -300,7 +333,8 @@ void drawLevel2HUD()
 			barX,
 			barY,
 			playerBarW,
-			barH);
+			barH
+			);
 	}
 
 	// Bar border
@@ -310,7 +344,8 @@ void drawLevel2HUD()
 		barX,
 		barY,
 		barW,
-		barH);
+		barH
+		);
 
 
 	// =========================================
@@ -329,7 +364,8 @@ void drawLevel2HUD()
 		boxX,
 		boxY,
 		boxW,
-		boxH);
+		boxH
+		);
 
 	// Dark orange outer border
 	iSetColor(110, 55, 10);
@@ -338,7 +374,8 @@ void drawLevel2HUD()
 		boxX - 2,
 		boxY - 2,
 		boxW + 4,
-		boxH + 4);
+		boxH + 4
+		);
 
 	// Orange border
 	iSetColor(255, 140, 30);
@@ -347,7 +384,8 @@ void drawLevel2HUD()
 		boxX,
 		boxY,
 		boxW,
-		boxH);
+		boxH
+		);
 
 
 	// Title
@@ -357,7 +395,8 @@ void drawLevel2HUD()
 		boxX + 12,
 		boxY + boxH - 17,
 		"BOT HEALTH",
-		GLUT_BITMAP_8_BY_13);
+		GLUT_BITMAP_8_BY_13
+		);
 
 
 	// Health value
@@ -368,8 +407,8 @@ void drawLevel2HUD()
 		sizeof(botHealthText),
 		"%d / %d",
 		(int)botHealth,
-		(int)L2_HEALTH_MAX);
-
+		(int)L2_HEALTH_MAX
+		);
 
 	iSetColor(255, 190, 90);
 
@@ -377,7 +416,8 @@ void drawLevel2HUD()
 		boxX + 12,
 		boxY + 10,
 		botHealthText,
-		GLUT_BITMAP_8_BY_13);
+		GLUT_BITMAP_8_BY_13
+		);
 
 
 	// Health bar
@@ -393,7 +433,8 @@ void drawLevel2HUD()
 		barX,
 		barY,
 		barW,
-		barH);
+		barH
+		);
 
 
 	// Filled health
@@ -414,7 +455,8 @@ void drawLevel2HUD()
 			barX,
 			barY,
 			botBarW,
-			barH);
+			barH
+			);
 	}
 
 	// Bar border
@@ -424,8 +466,20 @@ void drawLevel2HUD()
 		barX,
 		barY,
 		barW,
-		barH);
+		barH
+		);
 }
+void drawLevel2Border()
+{
+	iShowImage(
+		0,                        
+		250,   
+		1040,           
+		100,                         
+		levelBorder
+		);
+}
+
 
 void DrawLevel2()
 {
@@ -440,8 +494,14 @@ void DrawLevel2()
 
 	drawBot();
 	drawPlayer();
+	drawLevel2Border();
 
 	drawLevel2HUD();
+
+	if (level2Intro)
+	{
+		drawLevel2Intro();
+	}
 }
 
 #endif

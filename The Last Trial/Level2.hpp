@@ -6,5 +6,6 @@
 #include "Level2_Render.hpp"
 #include "Level2_Logic.hpp"
 #include "Level2_Character.hpp"
+#include "Level2_Intro.hpp"
 
 #endif

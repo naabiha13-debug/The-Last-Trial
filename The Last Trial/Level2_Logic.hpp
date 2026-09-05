@@ -10,7 +10,6 @@
 int playerBgOffset = 0;
 
 
-
 // =====================================
 // BRIDGE
 // 0 = normal
@@ -18,19 +17,21 @@ int playerBgOffset = 0;
 // 2 = gone
 // =====================================
 
-int bridgeState[45];
+int bridgeState[L2_BRIDGE_TILE_COUNT];
 
-bool bridgeGap[45];
+bool bridgeGap[L2_BRIDGE_TILE_COUNT];
 
-float brokenTileY[45];
+float brokenTileY[L2_BRIDGE_TILE_COUNT];
 
 int bridgeFallIndex = 0;
 
 DWORD bridgeStartTime;
 
 
+// =====================================
 // BISCUITS (health pickups)
 // =====================================
+
 int biscuitWorldX[L2_BISCUIT_COUNT];
 bool biscuitCollectedByPlayer[L2_BISCUIT_COUNT];
 bool biscuitCollectedByBot[L2_BISCUIT_COUNT];
@@ -38,7 +39,7 @@ bool biscuitCollectedByBot[L2_BISCUIT_COUNT];
 
 void initBiscuits()
 {
-	int span = 4820 - 180;
+	int span = 5820 - 180;
 	int step = span / (L2_BISCUIT_COUNT + 1);
 
 	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
@@ -57,7 +58,6 @@ void initBiscuits()
 bool playerFalling = false;
 
 
-
 // =====================================
 // PLAYER MOVEMENT
 // =====================================
@@ -68,21 +68,29 @@ void updateLevel2()
 		return;
 
 	DWORD elapsed = GetTickCount() - bridgeStartTime;
+
 	if (elapsed < 3000)
 		return;
 
 	DWORD now = GetTickCount();
 
+
 	// Health decay over time
 	if (now - playerHealthDecayTime >= L2_HEALTH_DECAY_INTERVAL)
 	{
 		playerHealthDecayTime = now;
+
 		playerHealth -= L2_HEALTH_DECAY_AMOUNT;
+
 		if (playerHealth < 0)
 			playerHealth = 0;
 	}
 
-	// Biscuit collection
+
+	// =====================================
+	// BISCUIT COLLECTION
+	// =====================================
+
 	int playerWorldX = playerX + playerBgOffset;
 	int playerCenterX = playerWorldX + 25;
 
@@ -92,51 +100,77 @@ void updateLevel2()
 			continue;
 
 		int dist = playerCenterX - biscuitWorldX[i];
+
 		if (dist < 0)
 			dist = -dist;
 
 		if (dist <= L2_BISCUIT_CATCH_RANGE)
 		{
 			biscuitCollectedByPlayer[i] = true;
+
 			playerHealth += L2_HEALTH_GAIN_AMOUNT;
+
 			if (playerHealth > L2_HEALTH_MAX)
 				playerHealth = L2_HEALTH_MAX;
+
 			triggerPlayerCatch();
 		}
 	}
 
-	bool movingRight = (GetAsyncKeyState('D') & 0x8000) ||
+
+	// =====================================
+	// PLAYER MOVEMENT
+	// =====================================
+
+	bool movingRight =
+		(GetAsyncKeyState('D') & 0x8000) ||
 		(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+
 
 	if (movingRight)
 	{
 		int speed = (int)(L2_BASE_RUN_SPEED * getPlayerSpeedFactor());
-		if (speed < 2)
-			speed = 2;
 
-		if (playerX >= 400 && playerBgOffset < 4000)
+		if (speed < L2_MIN_RUN_SPEED)  
+			speed = L2_MIN_RUN_SPEED;
+
+
+		// Scroll background until 5000
+		if (playerX >= 400 && playerBgOffset < 5000)
+		{
 			playerBgOffset += speed;
-		else if (playerBgOffset >= 4000 && playerX < 950)
+		}
+
+		// After scrolling is finished, move player
+		else if (playerBgOffset >= 5000 && playerX < 950)
+		{
 			playerX += speed;
+		}
+
 		else if (playerX < 400)
+		{
 			playerX += speed;
+		}
 	}
+
 
 	updatePlayerAnimation(movingRight);
 }
+
+
 // =====================================
 // GENERATE RANDOM BRIDGE GAPS
 // =====================================
 
 void generateBridgeGaps()
 {
-	for (int i = 0; i < 45; i++)
+	for (int i = 0; i < L2_BRIDGE_TILE_COUNT; i++)
 	{
 		bridgeGap[i] = false;
 	}
 
 
-	for (int i = 3; i < 43; i++)
+	for (int i = 3; i < L2_BRIDGE_TILE_COUNT - 2; i++)
 	{
 		if (rand() % 4 == 0 &&
 			bridgeGap[i - 1] == false)
@@ -153,7 +187,7 @@ void generateBridgeGaps()
 
 void initBridge()
 {
-	for (int i = 0; i < 45; i++)
+	for (int i = 0; i < L2_BRIDGE_TILE_COUNT; i++)
 	{
 		bridgeState[i] = 0;
 		brokenTileY[i] = 394;
@@ -162,7 +196,9 @@ void initBridge()
 	bridgeFallIndex = 0;
 
 	bridgeStartTime = GetTickCount();
+
 	playerFalling = false;
+
 	initBiscuits();
 }
 
@@ -183,12 +219,12 @@ void updateBridgeFall()
 	int index = (elapsed - 6000) / 500;
 
 
-	if (index >= 45)
-		index = 44;
+	if (index >= L2_BRIDGE_TILE_COUNT)
+		index = L2_BRIDGE_TILE_COUNT - 1;
 
 
 	while (bridgeFallIndex <= index &&
-		bridgeFallIndex < 45)
+		bridgeFallIndex < L2_BRIDGE_TILE_COUNT)
 	{
 		if (!bridgeGap[bridgeFallIndex])
 		{
@@ -206,7 +242,7 @@ void updateBridgeFall()
 
 void updateBrokenTiles()
 {
-	for (int i = 0; i < 45; i++)
+	for (int i = 0; i < L2_BRIDGE_TILE_COUNT; i++)
 	{
 		if (bridgeState[i] == 1)
 		{
@@ -230,33 +266,39 @@ bool isPlayerOnBridge()
 {
 	int playerWorldX = playerX + playerBgOffset;
 
-	// Use the player's center point instead of checking the full
-	// sprite width — avoids false "fall" when the player straddles
-	// the border between a gap tile and a solid tile after a jump.
+	// Player center
 	int playerCenterX = playerWorldX + 25;
+
 
 	// Before bridge
 	if (playerCenterX <= 180)
 		return true;
 
+
 	// After bridge
-	if (playerCenterX >= 4820)
+	if (playerCenterX >= 5820)
 		return true;
+
 
 	int i = (playerCenterX - 180) / 110;
 
-	if (i < 0 || i >= 45)
+
+	if (i < 0 || i >= L2_BRIDGE_TILE_COUNT)
 		return true;
 
-	// This position is a permanent gap
+
+	// Permanent gap
 	if (bridgeGap[i])
 		return false;
+
 
 	// Tile has completely fallen
 	if (bridgeState[i] == 2)
 		return false;
 
+
 	int tileY = 394;
+
 
 	// Tile is currently falling
 	if (bridgeState[i] == 1)
@@ -264,24 +306,33 @@ bool isPlayerOnBridge()
 		tileY = (int)brokenTileY[i];
 	}
 
-	// Player feet are on the tile
+
+	// Player feet are on tile
 	if (playerY >= tileY &&
 		playerY <= tileY + 10)
 	{
 		return true;
 	}
 
+
 	return false;
 }
 
 
+// =====================================
+// PLAYER FALL
+// =====================================
+
 void updatePlayerFall()
 {
-	// Player is deliberately airborne (jumping) — don't treat this as falling
+	// Player is deliberately airborne
+	// Don't treat this as falling
 	if (playerJumping)
 		return;
 
+
 	int playerWorldX = playerX + playerBgOffset;
+
 
 	// Before bridge
 	if (playerWorldX + 50 <= 180)
@@ -290,12 +341,14 @@ void updatePlayerFall()
 		return;
 	}
 
+
 	// After bridge
-	if (playerWorldX >= 4820)
+	if (playerWorldX >= 5820)
 	{
 		playerFalling = false;
 		return;
 	}
+
 
 	if (isPlayerOnBridge())
 	{
@@ -303,16 +356,19 @@ void updatePlayerFall()
 		return;
 	}
 
+
 	// Player is falling
 	playerFalling = true;
 
 	playerY -= 5;
 
-	// When the whole player goes below the screen
+
+	// When whole player goes below screen
 	if (playerY + 80 < 0)
 	{
 		playerFalling = false;
 	}
 }
+
 
 #endif
