@@ -53,7 +53,7 @@ bool playerFailedFreeze = false;
 bool botFailedFreeze = false;
 bool botFreezeOutcomeDecided = false;
 
-const int BOT_FREEZE_FAIL_CHANCE = 20; // % chance bot fails to stop in time
+
 
 
 // =====================================
@@ -118,6 +118,28 @@ int findPlayerTileIndex()
 	return i;
 }
 
+
+bool isSafeFreezeZone()
+{
+	int playerWorldX = playerX + playerBgOffset;
+	int playerCenterX = playerWorldX + 25;
+
+	
+	const int L2_END_SAFE_MARGIN = 500;
+	if (playerCenterX >= 5820 - L2_END_SAFE_MARGIN)
+		return false;
+
+	int i = findPlayerTileIndex();
+
+	// Player bridge e ase nai (age) -> safe
+	if (i < 0)
+		return true;
+
+	if (isTileGapOrFallen(i + 1) || isTileGapOrFallen(i + 2))
+		return false;
+
+	return true;
+}
 
 
 void initBiscuits()
@@ -235,7 +257,7 @@ void updateLevel2()
 		freezeEventActive = true;
 		freezeEventStartTime = nowFreeze;
 		playerFailedFreeze = false;
-		botFailedFreeze = (rand() % 100) < BOT_FREEZE_FAIL_CHANCE;
+		botFailedFreeze = false;
 		botFreezeOutcomeDecided = true;
 	}
 
