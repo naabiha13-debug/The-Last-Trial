@@ -8,6 +8,13 @@
 bool level2Intro = false;
 DWORD level2IntroStartTime = 0;
 const DWORD LEVEL2_INTRO_DURATION = 3000; // 3 seconds
+bool level2ShowingRules = false;
+void drawLevel2Rules()
+{
+	iShowImage(0, 0, 1000, 600, level2Rules);
+
+	iShowImage(800, 500, 140, 50, nextBtnImg);
+}
 
 void startLevel2Intro()
 {

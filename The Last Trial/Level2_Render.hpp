@@ -273,7 +273,7 @@ void drawLevel2HUD()
 	iText(
 		boxX + 12,
 		boxY + boxH - 17,
-		"457 HEALTH",
+		"STAMINA",
 		GLUT_BITMAP_8_BY_13
 		);
 
@@ -394,7 +394,7 @@ void drawLevel2HUD()
 	iText(
 		boxX + 12,
 		boxY + boxH - 17,
-		"BOT HEALTH",
+		"STAMINA",
 		GLUT_BITMAP_8_BY_13
 		);
 
@@ -560,6 +560,11 @@ void drawLevel2EndScreen()
 
 void DrawLevel2()
 {
+	if (level2ShowingRules)
+	{
+		drawLevel2Rules();
+		return;
+	}
 	drawPlayerBg();
 	drawBotBg();
 

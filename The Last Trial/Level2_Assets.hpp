@@ -2,6 +2,8 @@
 #define LEVEL2_ASSET_HPP
 
 #include "iGraphics.h"
+int level2Rules;
+int nextBtnImg;
 int level2StartImg;
 int playerBg[6];
 int botBg[6];
@@ -30,6 +32,8 @@ int level2WinImg;
 
 void loadLevel2Assets()
 {
+	level2Rules = iLoadImage("Image//level2Rules.png");
+	nextBtnImg = iLoadImage("Image//next.png");
 	level2StartImg = iLoadImage("Image//Level1Start.png");
 	// =====================================
 	// PLAYER BACKGROUNDS

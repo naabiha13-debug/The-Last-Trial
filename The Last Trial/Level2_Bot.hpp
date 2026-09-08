@@ -47,7 +47,7 @@ void advanceBot(int amount)
 	if (level2GameOver)
 		return;
 
-	if (botX >= 400 && botBgOffset < 5000)
+	if (botX >= 395 && botBgOffset < 5000)
 	{
 		botBgOffset += amount;
 	}
@@ -171,10 +171,10 @@ void updateBotJump()
 {
 	if (botFalling)
 		return;
-	DWORD jumpElapsed = GetTickCount() - bridgeStartTime;
+	//DWORD jumpElapsed = GetTickCount() - bridgeStartTime;
 
-	if (jumpElapsed < 3000)
-		return;
+	//if (jumpElapsed < 3000)
+		//return;
 
 	int botWorldX = botX + botBgOffset;
 	int botCenterX = botWorldX + 25;
@@ -200,7 +200,7 @@ void updateBotJump()
 			rand() % (BOT_JUMP_LOOKAHEAD_MAX - BOT_JUMP_LOOKAHEAD_MIN);
 
 		int aheadX = botCenterX + lookahead;
-
+		
 		if (aheadX > 5819)
 			aheadX = 5819;
 
@@ -291,8 +291,6 @@ void updateBotRun()
 
 	DWORD elapsed = GetTickCount() - bridgeStartTime;
 
-	if (elapsed < 3000)
-		return;
 
 	DWORD now = GetTickCount();
 
@@ -389,6 +387,8 @@ void updateBotFall()
 {
 	if (botJumping)
 		return;
+	if (botBgOffset < 3000)
+		return;
 
 	int botWorldX = botX + botBgOffset;
 
@@ -431,6 +431,7 @@ void resetBotForNewRound()
 	botX = 100;
 	botY = L2_BOT_GROUND_Y;
 	botBgOffset = 0;
+	botRunFrameTime = GetTickCount();
 	botFalling = false;
 	botJumping = false;
 	botRunFrame = 0;

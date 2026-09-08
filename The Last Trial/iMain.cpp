@@ -152,10 +152,8 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 2
 				currentScreen = 5;
 				loadLevel2Assets();
-				generateBridgeGaps();
-				initBridge();
-				resetBotForNewRound();
-				startLevel2Intro();
+		
+				level2ShowingRules = true;
 				
 				stopMenuMusic();
 				
@@ -212,6 +210,20 @@ void iMouse(int button, int state, int mx, int my)
 			// Level 1 mouse controls
 			level1Mouse(button, state, mx, my);
 		}
+		else if (currentScreen == 5 && level2ShowingRules)
+		{
+			if (mx >= 800 && mx <= 940 &&
+				my >= 500 && my <= 550)
+			{
+				level2ShowingRules = false;
+				generateBridgeGaps();
+				initBridge();
+				resetBotForNewRound();
+				botRunFrameTime = GetTickCount();
+
+				startLevel2Intro();
+			}
+		}
 		else if (currentScreen == 5 && level2GameOver)
 		{
 			bool hitBack =
@@ -242,29 +254,35 @@ void fixedUpdate()
 	}
 	if (currentScreen == 5)
 	{
-
-		bool wasIntro = level2Intro;
-		updateLevel2Intro();
-
-		if (wasIntro && !level2Intro)
+		if (!level2ShowingRules)
 		{
-			bridgeStartTime = GetTickCount(); // gameplay clock starts exactly when intro ends
-		}
+			bool wasIntro = level2Intro;
+			updateLevel2Intro();
 
-		if (!level2Intro)
-		{
-			if (!level2GameOver)
+			if (wasIntro && !level2Intro)
 			{
-				updateLevel2();
-				updateBotRun();
-				updateBridgeFall();
-				updateBrokenTiles();
-				updatePlayerFall();
-				updateBotJump();
-				updateBotFall();
+				bridgeStartTime = GetTickCount();
+				botHealthDecayTime = GetTickCount();    
+				playerHealthDecayTime = GetTickCount();
+			}
+
+			if (!level2Intro)
+			{
+				if (!level2GameOver)
+				{
+					updateLevel2();
+					updateBotRun();
+					updateBridgeFall();
+					updateBrokenTiles();
+					updatePlayerFall();
+					updateBotJump();
+					updateBotFall();
+				}
 			}
 		}
 	}
+	
+	
 	
 	// Free-roam WASD/arrow controls (used outside level 1)
 	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP))

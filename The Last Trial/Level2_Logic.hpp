@@ -146,8 +146,6 @@ void updateLevel2()
 
 	DWORD elapsed = GetTickCount() - bridgeStartTime;
 
-	if (elapsed < 3000)
-		return;
 
 	DWORD now = GetTickCount();
 
@@ -271,6 +269,7 @@ void updateLevel2()
 	if (movingRight)
 	{
 		int speed = (int)(L2_BASE_RUN_SPEED * getPlayerSpeedFactor());
+
 
 		if (speed < L2_MIN_RUN_SPEED)  
 			speed = L2_MIN_RUN_SPEED;

@@ -27,8 +27,8 @@ const int L2_BOT_GROUND_Y = L2_BOT_TILE_Y + 7;
 // =====================================
 const float L2_HEALTH_MAX = 100.0f;
 const DWORD L2_HEALTH_DECAY_INTERVAL = 3000;
-const float L2_HEALTH_DECAY_AMOUNT = 15.0f;
-const float L2_HEALTH_GAIN_AMOUNT = 35.0f;
+const float L2_HEALTH_DECAY_AMOUNT = 8.0f;
+const float L2_HEALTH_GAIN_AMOUNT = 30.0f;
 const float L2_MIN_SPEED_FACTOR = 0.3f;
 const int L2_MIN_RUN_SPEED = 2;
 const int L2_BASE_RUN_SPEED = 10;
