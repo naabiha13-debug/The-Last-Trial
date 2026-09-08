@@ -4,8 +4,8 @@
 #include "iGraphics.h"
 #include "Level2_Config.hpp"
 #include "Level2_Character.hpp"
-#include "Level2_Render.hpp"
- 
+
+
 
 int playerBgOffset = 0;
 
@@ -55,6 +55,18 @@ bool botFreezeOutcomeDecided = false;
 
 const int BOT_FREEZE_FAIL_CHANCE = 20; // % chance bot fails to stop in time
 
+
+// =====================================
+// PLAYER FALLING / GAME OVER STATE
+// (moved above includes so Level2_Bot.hpp can see these)
+// =====================================
+
+bool playerFalling = false;
+bool playerHasMovedOnce = false;
+bool level2GameOver = false;
+int level2Result = 0; // 0 = none, 1 = lose (fell), 2 = win (reached end)
+
+
 void scheduleNextFreezeEvent()
 {
 	int delay = 8000 + rand() % 7000; // next event in 8-15 sec
@@ -89,6 +101,10 @@ void collapseTileUnder(int tileIndex)
 		bridgeState[tileIndex] = 1;
 }
 
+
+#include "Level2_Render.hpp"
+#include "Level2_Bot.hpp"
+
 int findPlayerTileIndex()
 {
 	int playerWorldX = playerX + playerBgOffset;
@@ -119,24 +135,14 @@ void initBiscuits()
 
 
 // =====================================
-// PLAYER FALLING
-// =====================================
-
-bool playerFalling = false;
-bool playerHasMovedOnce = false;
-bool level2GameOver = false;
-int level2Result = 0; // 0 = none, 1 = lose (fell), 2 = win (reached end)
-
-
-// =====================================
 // PLAYER MOVEMENT
 // =====================================
 
 void updateLevel2()
-{    
+{
 
 	if (level2GameOver)
-		return; 
+		return;
 
 	if (playerFalling)
 		return;
@@ -271,7 +277,7 @@ void updateLevel2()
 		int speed = (int)(L2_BASE_RUN_SPEED * getPlayerSpeedFactor());
 
 
-		if (speed < L2_MIN_RUN_SPEED)  
+		if (speed < L2_MIN_RUN_SPEED)
 			speed = L2_MIN_RUN_SPEED;
 
 
@@ -346,7 +352,7 @@ void initBridge()
 	level2GameOver = false;
 	level2Result = 0;
 
-	bridgeStartTime = GetTickCount(); 
+	bridgeStartTime = GetTickCount();
 
 	initBiscuits();
 
@@ -368,6 +374,7 @@ void initBridge()
 	botFreezeOutcomeDecided = false;
 	playerHasMovedOnce = false;
 	scheduleNextFreezeEvent();
+	resetBotForNewRound();
 }
 
 // =====================================
@@ -520,7 +527,7 @@ void updatePlayerFall()
 	if (isPlayerOnBridge())
 	{
 		playerFalling = false;
-	
+
 		return;
 	}
 

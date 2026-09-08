@@ -6,6 +6,7 @@
 #include "Level2_Logic.hpp"
 
 
+
 int botBgOffset = 0;
 
 // ---- Bot run ----
@@ -228,6 +229,8 @@ void updateBotJump()
 			}
 		}
 	}
+	if (!botJumping) 
+		return;
 
 	DWORD elapsed = GetTickCount() - botJumpStartTime;
 
@@ -437,6 +440,10 @@ void resetBotForNewRound()
 	botRunFrame = 0;
 	botHealth = L2_HEALTH_MAX;
 	botHealthDecayTime = GetTickCount();
+
+	botJumpStartTime = GetTickCount();
+	botJumpTargetDistance = 0.0f;
+	botJumpDistanceCovered = 0.0f;
 }
 
 #endif
