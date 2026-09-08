@@ -44,13 +44,23 @@ float getBotSpeedFactor()
 
 void advanceBot(int amount)
 {
+	if (level2GameOver)
+		return;
+
 	if (botX >= 400 && botBgOffset < 5000)
 	{
 		botBgOffset += amount;
 	}
-	else if (botBgOffset >= 5000 && botX < 950)
+	else if (botBgOffset >= 5000 && botX < 795)
 	{
 		botX += amount;
+
+		if (botX >= 795)
+		{
+			level2GameOver = true;
+			level2Result = 1; // bot reached first — player loses
+			botRunFrame = 0;
+		}
 	}
 	else if (botX < 400)
 	{
@@ -161,6 +171,10 @@ void updateBotJump()
 {
 	if (botFalling)
 		return;
+	DWORD jumpElapsed = GetTickCount() - bridgeStartTime;
+
+	if (jumpElapsed < 3000)
+		return;
 
 	int botWorldX = botX + botBgOffset;
 	int botCenterX = botWorldX + 25;
@@ -204,8 +218,11 @@ void updateBotJump()
 					endIndex++;
 				}
 
+				DWORD sinceStart = GetTickCount() - bridgeStartTime;
+
 				bool mistake =
-					(rand() % 100) < BOT_MISTAKE_CHANCE_PERCENT;
+					(sinceStart >= 10000) &&
+					((rand() % 100) < BOT_MISTAKE_CHANCE_PERCENT);
 
 				startBotJump(endIndex, mistake);
 			}
@@ -250,6 +267,27 @@ void updateBotRun()
 
 	if (botJumping)
 		return;
+
+	
+
+	if (freezeEventActive)
+	{
+		DWORD freezeElapsed = GetTickCount() - freezeEventStartTime;
+
+		if (freezeElapsed >= FREEZE_GRACE_PERIOD && botFailedFreeze)
+		{
+			int botWorldX = botX + botBgOffset;
+			int botCenterX = botWorldX + 25;
+			int i = (botCenterX - 180) / 110;
+
+			collapseTileUnder(i);
+		}
+
+		if (!botFailedFreeze)
+		{
+			return;
+		}
+	}
 
 	DWORD elapsed = GetTickCount() - bridgeStartTime;
 
@@ -378,10 +416,26 @@ void updateBotFall()
 	botY -= 5;
 	if (botY + 80 < 0)
 	{
+		if (!level2GameOver)
+		{
+			level2GameOver = true;
+			level2Result = 2; // bot fell — player wins
+		}
 		return;
 	}
+
 }
 
-
+void resetBotForNewRound()
+{
+	botX = 100;
+	botY = L2_BOT_GROUND_Y;
+	botBgOffset = 0;
+	botFalling = false;
+	botJumping = false;
+	botRunFrame = 0;
+	botHealth = L2_HEALTH_MAX;
+	botHealthDecayTime = GetTickCount();
+}
 
 #endif

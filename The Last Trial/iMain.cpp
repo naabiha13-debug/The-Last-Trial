@@ -154,6 +154,7 @@ void iMouse(int button, int state, int mx, int my)
 				loadLevel2Assets();
 				generateBridgeGaps();
 				initBridge();
+				resetBotForNewRound();
 				startLevel2Intro();
 				
 				stopMenuMusic();
@@ -211,6 +212,19 @@ void iMouse(int button, int state, int mx, int my)
 			// Level 1 mouse controls
 			level1Mouse(button, state, mx, my);
 		}
+		else if (currentScreen == 5 && level2GameOver)
+		{
+			bool hitBack =
+				mx >= level2BackBtnX &&
+				mx <= level2BackBtnX + level2BackBtnW &&
+				my >= level2BackBtnY &&
+				my <= level2BackBtnY + level2BackBtnH;
+
+			if (hitBack)
+			{
+				currentScreen = 2;
+			}
+		}
 	}
 }
 
@@ -228,17 +242,27 @@ void fixedUpdate()
 	}
 	if (currentScreen == 5)
 	{
+
+		bool wasIntro = level2Intro;
 		updateLevel2Intro();
+
+		if (wasIntro && !level2Intro)
+		{
+			bridgeStartTime = GetTickCount(); // gameplay clock starts exactly when intro ends
+		}
 
 		if (!level2Intro)
 		{
-			updateLevel2();
-			updateBotRun();
-			updateBridgeFall();
-			updateBrokenTiles();
-			updatePlayerFall();
-			updateBotJump();
-			updateBotFall();
+			if (!level2GameOver)
+			{
+				updateLevel2();
+				updateBotRun();
+				updateBridgeFall();
+				updateBrokenTiles();
+				updatePlayerFall();
+				updateBotJump();
+				updateBotFall();
+			}
 		}
 	}
 	

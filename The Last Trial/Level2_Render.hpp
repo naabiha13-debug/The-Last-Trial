@@ -10,6 +10,10 @@
 #include "Level2_Logic.hpp"
 #include "Level2_Bot.hpp"
 
+int level2BackBtnX = 0;
+int level2BackBtnY = 0;
+int level2BackBtnW = 0;
+int level2BackBtnH = 0;
 
 void drawPlayerBg()
 {
@@ -90,7 +94,6 @@ void drawBridge()
 	}
 }
 
-
 void drawBridgeBot()
 {
 	int startX = 180;
@@ -119,7 +122,6 @@ void drawBridgeBot()
 		else
 			playerTileY = L2_PLAYER_TILE_Y;
 
-		// Mirror the fall amount onto the bot's side
 		int fallenAmount = L2_PLAYER_TILE_Y - playerTileY;
 		int tileY = L2_BOT_TILE_Y - fallenAmount;
 
@@ -139,8 +141,6 @@ void drawBridgeBot()
 			);
 	}
 }
-
-
 void drawBot()
 {
 	if (botFalling && botY + 80 < 0)
@@ -469,6 +469,39 @@ void drawLevel2HUD()
 		barH
 		);
 }
+
+void drawFreezeWarning()
+{
+	if (!freezeEventActive)
+		return;
+
+	DWORD elapsed = GetTickCount() - freezeEventStartTime;
+	int remaining = (int)FREEZE_EVENT_DURATION - (int)elapsed;
+
+	if (remaining < 0)
+		remaining = 0;
+
+	iSetColor(220, 20, 20);
+	iText(370, 550, "FREEZE! DON'T MOVE!", GLUT_BITMAP_TIMES_ROMAN_24);
+
+	int barW = 200;
+	int barX = (L2_SCREEN_WIDTH - barW) / 2;
+	int barY = 520;
+	int barH = 14;
+
+	iSetColor(40, 40, 40);
+	iFilledRectangle(barX, barY, barW, barH);
+
+	int filled = (int)(((float)remaining / (float)FREEZE_EVENT_DURATION) * barW);
+
+	iSetColor(220, 20, 20);
+	iFilledRectangle(barX, barY, filled, barH);
+
+	iSetColor(255, 255, 255);
+	iRectangle(barX, barY, barW, barH);
+}
+
+
 void drawLevel2Border()
 {
 	iShowImage(
@@ -480,6 +513,50 @@ void drawLevel2Border()
 		);
 }
 
+
+void drawLevel2EndScreen()
+{
+	int img = (level2Result == 2) ? level2WinImg : gameOver2Img;
+
+	int dispW, dispH, x, y;
+
+	if (level2Result == 2)
+	{
+		// Win image — smaller, centered
+		dispW = 620;
+		dispH = (int)(dispW * 793.0 / 1983.0);
+		x = (L2_SCREEN_WIDTH - dispW) / 2;
+		y = (L2_SCREEN_HEIGHT - dispH) / 2;
+	}
+	else
+	{
+		// Lose image — full screen
+		dispW = L2_SCREEN_WIDTH;
+		dispH = L2_SCREEN_HEIGHT;
+		x = 0;
+		y = 0;
+	}
+
+	iShowImage(x, y, dispW, dispH, img);
+
+	int btnWidth = 220;
+	int btnHeight = 48;
+	int btnX = (L2_SCREEN_WIDTH - btnWidth) / 2;
+	int btnY = 20;
+
+	iSetColor(20, 20, 20);
+	iFilledRectangle(btnX, btnY, btnWidth, btnHeight);
+
+	iSetColor(255, 255, 255);
+	iRectangle(btnX, btnY, btnWidth, btnHeight);
+
+	iText(btnX + 30, btnY + btnHeight / 2 - 6, "< BACK TO LEVELS", GLUT_BITMAP_9_BY_15);
+
+	level2BackBtnX = btnX;
+	level2BackBtnY = btnY;
+	level2BackBtnW = btnWidth;
+	level2BackBtnH = btnHeight;
+}
 
 void DrawLevel2()
 {
@@ -497,11 +574,16 @@ void DrawLevel2()
 	drawLevel2Border();
 
 	drawLevel2HUD();
+	drawFreezeWarning();
 
 	if (level2Intro)
 	{
 		drawLevel2Intro();
 	}
-}
 
+	if (level2GameOver)
+	{
+		drawLevel2EndScreen();
+	}
+}
 #endif

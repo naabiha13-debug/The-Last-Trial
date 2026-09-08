@@ -5,7 +5,7 @@
 #include "Level2_Config.hpp"
 #include "Level2_Character.hpp"
 #include "Level2_Render.hpp"
-
+ 
 
 int playerBgOffset = 0;
 
@@ -34,7 +34,74 @@ DWORD bridgeStartTime;
 
 int biscuitWorldX[L2_BISCUIT_COUNT];
 bool biscuitCollectedByPlayer[L2_BISCUIT_COUNT];
+
+
 bool biscuitCollectedByBot[L2_BISCUIT_COUNT];
+
+
+// =====================================
+// FREEZE EVENT ("don't move" challenge)
+// =====================================
+
+bool freezeEventActive = false;
+DWORD freezeEventStartTime = 0;
+const DWORD FREEZE_EVENT_DURATION = 1200; // 1.2 sec reaction window
+const DWORD FREEZE_GRACE_PERIOD = 700;
+DWORD nextFreezeEventTime = 0;
+
+bool playerFailedFreeze = false;
+bool botFailedFreeze = false;
+bool botFreezeOutcomeDecided = false;
+
+const int BOT_FREEZE_FAIL_CHANCE = 20; // % chance bot fails to stop in time
+
+void scheduleNextFreezeEvent()
+{
+	int delay = 8000 + rand() % 7000; // next event in 8-15 sec
+	nextFreezeEventTime = GetTickCount() + delay;
+}
+
+bool isTileGapOrFallen(int i)
+{
+	if (i < 0 || i >= L2_BRIDGE_TILE_COUNT)
+		return true;
+
+	return bridgeGap[i] || bridgeState[i] != 0;
+}
+
+void collapseTileUnder(int tileIndex)
+{
+	if (tileIndex < 0 || tileIndex >= L2_BRIDGE_TILE_COUNT)
+		return;
+
+	if (bridgeGap[tileIndex])
+		return;
+
+	// Don't collapse this tile if it would create an unjumpable
+	// multi-tile gap right next to an existing gap/fallen tile.
+	bool nextIsGap = isTileGapOrFallen(tileIndex + 1);
+	bool prevIsGap = isTileGapOrFallen(tileIndex - 1);
+
+	if (nextIsGap || prevIsGap)
+		return; // would trap the player between two gaps — skip
+
+	if (bridgeState[tileIndex] == 0)
+		bridgeState[tileIndex] = 1;
+}
+
+int findPlayerTileIndex()
+{
+	int playerWorldX = playerX + playerBgOffset;
+	int playerCenterX = playerWorldX + 25;
+
+	int i = (playerCenterX - 180) / 110;
+
+	if (i < 0 || i >= L2_BRIDGE_TILE_COUNT)
+		return -1;
+
+	return i;
+}
+
 
 
 void initBiscuits()
@@ -56,6 +123,9 @@ void initBiscuits()
 // =====================================
 
 bool playerFalling = false;
+bool playerHasMovedOnce = false;
+bool level2GameOver = false;
+int level2Result = 0; // 0 = none, 1 = lose (fell), 2 = win (reached end)
 
 
 // =====================================
@@ -63,8 +133,15 @@ bool playerFalling = false;
 // =====================================
 
 void updateLevel2()
-{
+{    
+
+	if (level2GameOver)
+		return; 
+
 	if (playerFalling)
+		return;
+
+	if (level2Intro)
 		return;
 
 	DWORD elapsed = GetTickCount() - bridgeStartTime;
@@ -75,8 +152,34 @@ void updateLevel2()
 	DWORD now = GetTickCount();
 
 
+	// =====================================
+	// FORCED START — must begin moving within 5 sec of gameplay start
+	// =====================================
+
+	if (!playerHasMovedOnce)
+	{
+		bool movingCheck =
+			(GetAsyncKeyState('D') & 0x8000) ||
+			(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+
+		if (movingCheck)
+		{
+			playerHasMovedOnce = true;
+			playerHealthDecayTime = now;
+		}
+		else if (elapsed >= 8000) // 3 sec initial delay + 5 sec grace
+		{
+			level2GameOver = true;
+			level2Result = 1; // lose — didn't start in time
+			return;
+		}
+	}
+
+
 	// Health decay over time
-	if (now - playerHealthDecayTime >= L2_HEALTH_DECAY_INTERVAL)
+	// Health decay over time — only after player has started moving
+	if (playerHasMovedOnce &&
+		now - playerHealthDecayTime >= L2_HEALTH_DECAY_INTERVAL)
 	{
 		playerHealthDecayTime = now;
 
@@ -117,6 +220,44 @@ void updateLevel2()
 		}
 	}
 
+	// =====================================
+	// FREEZE EVENT
+	// =====================================
+
+	DWORD nowFreeze = GetTickCount();
+
+	if (!freezeEventActive && nowFreeze >= nextFreezeEventTime)
+	{
+		freezeEventActive = true;
+		freezeEventStartTime = nowFreeze;
+		playerFailedFreeze = false;
+		botFailedFreeze = (rand() % 100) < BOT_FREEZE_FAIL_CHANCE;
+		botFreezeOutcomeDecided = true;
+	}
+
+	if (freezeEventActive)
+	{
+		DWORD freezeElapsed = nowFreeze - freezeEventStartTime;
+
+		if (freezeElapsed >= FREEZE_GRACE_PERIOD)
+		{
+			bool movingRightNow =
+				(GetAsyncKeyState('D') & 0x8000) ||
+				(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+
+			if (movingRightNow)
+			{
+				playerFailedFreeze = true;
+				collapseTileUnder(findPlayerTileIndex());
+			}
+		}
+
+		if (freezeElapsed >= FREEZE_EVENT_DURATION)
+		{
+			freezeEventActive = false;
+			scheduleNextFreezeEvent();
+		}
+	}
 
 	// =====================================
 	// PLAYER MOVEMENT
@@ -142,9 +283,17 @@ void updateLevel2()
 		}
 
 		// After scrolling is finished, move player
-		else if (playerBgOffset >= 5000 && playerX < 950)
+		else if (playerBgOffset >= 5000 && playerX < 795)
 		{
 			playerX += speed;
+
+			if (playerX >= 795)
+			{
+				level2GameOver = true;
+				level2Result = 2; // win
+				playerAnimState = PLAYER_IDLE;
+				playerRunFrame = 0;
+			}
 		}
 
 		else if (playerX < 400)
@@ -195,13 +344,32 @@ void initBridge()
 
 	bridgeFallIndex = 0;
 
-	bridgeStartTime = GetTickCount();
+	level2GameOver = false;
+	level2Result = 0;
 
-	playerFalling = false;
+	bridgeStartTime = GetTickCount(); 
 
 	initBiscuits();
-}
 
+	// ===== Reset player state =====
+	playerX = 100;
+	playerY = PLAYER_GROUND_Y;
+	playerBgOffset = 0;
+	playerFalling = false;
+	playerJumping = false;
+	playerJumpFrame = 0;
+	playerCatching = false;
+	playerAnimState = PLAYER_IDLE;
+	playerRunFrame = 0;
+	playerHealth = L2_HEALTH_MAX;
+	playerHealthDecayTime = GetTickCount();
+	freezeEventActive = false;
+	playerFailedFreeze = false;
+	botFailedFreeze = false;
+	botFreezeOutcomeDecided = false;
+	playerHasMovedOnce = false;
+	scheduleNextFreezeEvent();
+}
 
 // =====================================
 // BRIDGE FALLING
@@ -353,6 +521,7 @@ void updatePlayerFall()
 	if (isPlayerOnBridge())
 	{
 		playerFalling = false;
+	
 		return;
 	}
 
@@ -367,6 +536,8 @@ void updatePlayerFall()
 	if (playerY + 80 < 0)
 	{
 		playerFalling = false;
+		level2GameOver = true;
+		level2Result = 1;
 	}
 }
 

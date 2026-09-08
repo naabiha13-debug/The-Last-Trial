@@ -23,6 +23,10 @@ int playerCatchImg[2];
 // bot1 (qualifiedBot == 0) and bot2 (qualifiedBot == 1) run cycles
 int botRunImg[2][8];
 
+int gameOver2Img;
+int level2WinImg;
+
+
 
 void loadLevel2Assets()
 {
@@ -181,6 +185,13 @@ void loadLevel2Assets()
 	botFallImg[1][0] = iLoadImage("Image//bot2_fall_1.png");
 	botFallImg[1][1] = iLoadImage("Image//bot2_fall_2.png");
 	botFallImg[1][2] = iLoadImage("Image//bot2_fall_3.png");
+
+	// =====================================
+	// LEVEL 2 END SCREENS
+	// =====================================
+
+	gameOver2Img = iLoadImage("Image//gameOver2.png");
+	level2WinImg = iLoadImage("Image//victory.png");
 }
 
 #endif
