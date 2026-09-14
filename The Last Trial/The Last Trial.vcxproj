@@ -85,6 +85,7 @@
     <ClInclude Include="bitmap_loader.h" />
     <ClInclude Include="glaux.h" />
     <ClInclude Include="glut.h" />
+    <ClInclude Include="Level3.hpp" />
     <ClInclude Include="iGraphics.h" />
     <ClInclude Include="Level1.hpp" />
     <ClInclude Include="Level1_Assets.hpp" />
@@ -102,6 +103,8 @@
     <ClInclude Include="Level2_Intro.hpp" />
     <ClInclude Include="Level2_Logic.hpp" />
     <ClInclude Include="Level2_Render.hpp" />
+    <ClInclude Include="Level3_Assets.hpp" />
+    <ClInclude Include="Level3_Player.hpp" />
     <ClInclude Include="menu.hpp" />
     <ClInclude Include="stb_image.h" />
   </ItemGroup>

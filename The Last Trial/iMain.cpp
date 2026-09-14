@@ -3,6 +3,7 @@ int storyPage = 1;
 #include "menu.hpp"
 #include "Level1.hpp"
 #include "Level2.hpp"
+#include "Level3.hpp"
 #include <math.h>
 #include "Audio.hpp"
 #include <stdlib.h>
@@ -39,6 +40,10 @@ void iDraw()
 	else if (currentScreen == 5)
 	{
 		DrawLevel2();
+	}
+	else if (currentScreen == 6)
+	{
+		drawLevel3();
 	}
 }
 
@@ -158,6 +163,15 @@ void iMouse(int button, int state, int mx, int my)
 				stopMenuMusic();
 				
 			}
+			else if (mx >= 365 && mx <= 635 &&
+				my >= 160 && my <= 240)
+			{
+				// Level 3
+				currentScreen = 6;
+				loadLevel3Assets();
+
+				stopMenuMusic();
+			}
 
 			else if (mx >= 60 && mx <= 200 &&
 				my >= 500 && my <= 550)
@@ -262,7 +276,7 @@ void fixedUpdate()
 			if (wasIntro && !level2Intro)
 			{
 				bridgeStartTime = GetTickCount();
-				botHealthDecayTime = GetTickCount();    
+				botHealthDecayTime = GetTickCount();
 				playerHealthDecayTime = GetTickCount();
 			}
 
@@ -281,6 +295,13 @@ void fixedUpdate()
 			}
 		}
 	}
+
+	// Level 3
+	if (currentScreen == 6)
+	{
+		updateLevel3Player();
+	}
+	
 	
 	
 	
