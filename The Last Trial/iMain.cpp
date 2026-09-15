@@ -251,6 +251,10 @@ void iMouse(int button, int state, int mx, int my)
 				currentScreen = 2;
 			}
 		}
+		else if (currentScreen == 6)
+		{
+			handleWaitingRoomClick(mx, my);
+		}
 	}
 }
 
@@ -300,8 +304,8 @@ void fixedUpdate()
 	if (currentScreen == 6)
 	{
 		updateLevel3Player();
+		updateWaitingRoomStage();
 	}
-	
 	
 	
 	

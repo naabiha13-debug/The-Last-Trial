@@ -107,6 +107,7 @@
     <ClInclude Include="Level3_Player.hpp" />
     <ClInclude Include="menu.hpp" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="WaitingRoom.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iMain.cpp" />
