@@ -85,6 +85,7 @@
     <ClInclude Include="bitmap_loader.h" />
     <ClInclude Include="glaux.h" />
     <ClInclude Include="glut.h" />
+    <ClInclude Include="Jungle.hpp" />
     <ClInclude Include="Level3.hpp" />
     <ClInclude Include="iGraphics.h" />
     <ClInclude Include="Level1.hpp" />

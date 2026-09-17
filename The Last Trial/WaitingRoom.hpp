@@ -4,6 +4,7 @@
 #include "iGraphics.h"
 #include "Level3_Assets.hpp"
 #include "Level3_Player.hpp"
+#include "jungle.hpp"
 
 // Cue object position 
 int cueX = 930;
@@ -20,32 +21,26 @@ int takeFrame = 0;
 int warningFrame = 0;
 bool iKeyWasPressed = false;
 
-
-
 void drawWaitingRoomStage()
 {
 	iShowImage(cueX, cueY, cueW, cueH, cueImg);
 
 	if (waitingRoomStage == 1)
-		iShowImage(l3PlayerX-60, l3PlayerY + 60, 250, 400, msg1Img);
+		iShowImage(l3PlayerX - 60, l3PlayerY + 60, 250, 400, msg1Img);
 
 	else if (waitingRoomStage == 2)
 		iShowImage(0, 0, 1000, 600, msg2Img);
 
 	else if (waitingRoomStage == 4)
 	{
-		// player jekhane darai ache, thik oikhanei take sprite dekhabe
-		// idle sprite er sathe exact match: same X, Y, width(70), height(105)
-		if (takeFrame == 0) iShowImage(l3PlayerX, l3PlayerY, 70, 105, take1Img);
-		else if (takeFrame == 1) iShowImage(l3PlayerX, l3PlayerY, 70, 105, take2Img);
-		else if (takeFrame == 2) iShowImage(l3PlayerX, l3PlayerY, 70, 105, take3Img);
+		iShowImage(l3PlayerX, l3PlayerY, 70, 90, pickupImg[takeFrame]);
 	}
 	else if (waitingRoomStage == 5)
 	{
 		if (warningFrame == 0) iShowImage(0, 0, 1000, 600, warning1Img);
 		else if (warningFrame == 1) iShowImage(0, 0, 1000, 600, warning2Img);
 
-		iShowImage(820,520, 90,50, nextImg);
+		iShowImage(820, 520, 90, 50, nextImg);
 	}
 }
 
@@ -54,18 +49,18 @@ void updateWaitingRoomStage()
 	if (waitingRoomStage == 4)
 	{
 		wrTimer++;
-		if (wrTimer >= 40)   // take1/2/3
+		if (wrTimer >= 20)   
 		{
 			wrTimer = 0;
 			takeFrame++;
-			if (takeFrame > 2)
+			if (takeFrame > 4)
 			{
 				takeFrame = 0;
 				waitingRoomStage = 5;
 			}
 		}
 	}
-	
+
 
 	if (waitingRoomStage == 3)
 	{
@@ -86,19 +81,20 @@ void handleWaitingRoomClick(int mx, int my)
 	if (waitingRoomStage == 5)
 	{
 		bool clickedNext =
-			mx >= 820 && mx <= 820+90 &&
-			my >= 520 && my <= 520+90;
+			mx >= 820 && mx <= 820 + 90 &&
+			my >= 520 && my <= 520 + 90;
 
 		if (clickedNext)
 		{
 			warningFrame++;
 			if (warningFrame > 1)
 				waitingRoomStage = 6;
+		
 		}
 		return;
 	}
 
-	
+
 
 	bool clickedCue =
 		mx >= cueX && mx <= cueX + cueW &&

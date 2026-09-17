@@ -303,10 +303,17 @@ void fixedUpdate()
 	// Level 3
 	if (currentScreen == 6)
 	{
-		updateLevel3Player();
+		if (waitingRoomStage == 6)
+		{
+			updateJungle();
+			updateJungleDolls();
+		}
+		else
+		{
+			updateLevel3Player();
+		}
 		updateWaitingRoomStage();
 	}
-	
 	
 	
 	// Free-roam WASD/arrow controls (used outside level 1)

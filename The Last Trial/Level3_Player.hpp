@@ -7,32 +7,24 @@
 
 // Level 3 Player position
 int l3PlayerX = 0;
-int l3PlayerY = 245;
+int l3PlayerY = 242;
 
 // Level 3 Animation
-int l3PlayerFrame = 0;
+int l3PlayerFrame = 0;      // 0 to 8 (9 frames)
 int l3WalkTimer = 0;
 bool l3PlayerWalking = false;
+bool l3FacingRight = true;  // true = right/forward, false = left/backward
 
 
 // Draw Level 3 Player
 void drawLevel3Player()
 {
-	if (l3PlayerFrame == 0)
-		iShowImage(l3PlayerX, l3PlayerY, 70, 105, l3idleImg);
-
-	else if (l3PlayerFrame == 1)
-		iShowImage(l3PlayerX, l3PlayerY, 100, 105, l3walk1Img);
-
-	else if (l3PlayerFrame == 2)
-		iShowImage(l3PlayerX, l3PlayerY, 100, 105, l3walk2Img);
-
-	else if (l3PlayerFrame == 3)
-		iShowImage(l3PlayerX, l3PlayerY, 100, 105, l3walk3Img);
-
-	else if (l3PlayerFrame == 4)
-		iShowImage(l3PlayerX, l3PlayerY, 100, 105, l3walk4Img);
+	if (l3FacingRight)
+		iShowImage(l3PlayerX, l3PlayerY, 70, 90, l3walkFImg[l3PlayerFrame]);
+	else
+		iShowImage(l3PlayerX, l3PlayerY, 70, 90, l3walkBImg[l3PlayerFrame]);
 }
+
 void updateLevel3Player()
 {
 	// Right arrow
@@ -40,6 +32,7 @@ void updateLevel3Player()
 	{
 		l3PlayerX += 5;
 		l3PlayerWalking = true;
+		l3FacingRight = true;
 
 		l3WalkTimer++;
 
@@ -48,8 +41,8 @@ void updateLevel3Player()
 			l3WalkTimer = 0;
 			l3PlayerFrame++;
 
-			if (l3PlayerFrame < 3 || l3PlayerFrame > 4)
-				l3PlayerFrame = 3;
+			if (l3PlayerFrame > 8)
+				l3PlayerFrame = 0;
 		}
 	}
 
@@ -58,6 +51,7 @@ void updateLevel3Player()
 	{
 		l3PlayerX -= 5;
 		l3PlayerWalking = true;
+		l3FacingRight = false;
 
 		l3WalkTimer++;
 
@@ -66,17 +60,17 @@ void updateLevel3Player()
 			l3WalkTimer = 0;
 			l3PlayerFrame++;
 
-			if (l3PlayerFrame < 1 || l3PlayerFrame > 2)
-				l3PlayerFrame = 1;
+			if (l3PlayerFrame > 8)
+				l3PlayerFrame = 0;
 		}
 	}
 
-	// No movement 
+	// No movement
 	else
 	{
 		l3PlayerWalking = false;
 		l3WalkTimer = 0;
-		l3PlayerFrame = 0;
+		l3PlayerFrame = 0;   // frame[0] = idle pose (in current facing direction)
 	}
 }
 #endif
