@@ -169,6 +169,7 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 3
 				currentScreen = 6;
 				loadLevel3Assets();
+				initJungleRocks();
 
 				stopMenuMusic();
 			}
@@ -307,12 +308,14 @@ void fixedUpdate()
 		{
 			updateJungle();
 			updateJungleDolls();
+
 		}
 		else
 		{
 			updateLevel3Player();
 		}
-		updateWaitingRoomStage();
+			updateWaitingRoomStage();
+		
 	}
 	
 	

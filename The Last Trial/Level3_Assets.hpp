@@ -21,6 +21,13 @@ int jungleBgImg[3];
 int dollImg[5];
 int dontMoveImg;
 int paperImg;
+int prop1Img;
+int riverBgImg[4];
+const int jumpFrameCount = 8;   // CHANGED: total jump frames (frame_01 .. frame_08)
+int jumpImg[jumpFrameCount];    // CHANGED: was jumpImg[6]
+int rockImg;
+int prop2Img;
+
 
 void loadLevel3Assets()
 {
@@ -58,8 +65,26 @@ void loadLevel3Assets()
 		std::string dollPath = "Image//d" + std::to_string(i + 1) + ".png";
 		dollImg[i] = iLoadImage((char*)dollPath.c_str());
 	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		std::string riverPath = "Image//River" + std::to_string(i + 1) + ".png";
+		riverBgImg[i] = iLoadImage((char*)riverPath.c_str());
+	}
+
 	dontMoveImg = iLoadImage("Image//dontmove.png");
 	paperImg = iLoadImage("Image//paper.png");
+	prop1Img = iLoadImage("Image//prop1.png");
+	prop2Img = iLoadImage("Image//prop2.png");
+
+	// CHANGED: load all 8 jump frames in order (frame_01.png ... frame_08.png)
+	for (int i = 0; i < jumpFrameCount; i++)
+	{
+		std::string num = (i + 1 < 10) ? ("0" + std::to_string(i + 1)) : std::to_string(i + 1);
+		std::string jumpPath = "Image//frame_" + num + ".png";
+		jumpImg[i] = iLoadImage((char*)jumpPath.c_str());
+	}
+	rockImg = iLoadImage("Image//rock.png");
 }
 
 #endif

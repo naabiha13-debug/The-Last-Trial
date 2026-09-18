@@ -26,7 +26,7 @@ void drawWaitingRoomStage()
 	iShowImage(cueX, cueY, cueW, cueH, cueImg);
 
 	if (waitingRoomStage == 1)
-		iShowImage(l3PlayerX - 60, l3PlayerY + 60, 250, 400, msg1Img);
+		iShowImage(l3PlayerX-155, l3PlayerY-20, 250, 400, msg1Img);
 
 	else if (waitingRoomStage == 2)
 		iShowImage(0, 0, 1000, 600, msg2Img);

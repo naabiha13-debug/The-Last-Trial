@@ -3,10 +3,12 @@
 
 #include "iGraphics.h"
 #include "Level3_Assets.hpp"
+#include <math.h>
+#include "river.hpp"
 
 // Camera/world scroll offset
 int jungleWorldX = 0;
-const int jungleTotalWidth = 3000;
+const int jungleTotalWidth = 7000;
 const int jungleScreenWidth = 1000;
 const int jungleMaxScroll = jungleTotalWidth - jungleScreenWidth; // 2000
 
@@ -26,7 +28,7 @@ int dollTimer[3] = { 0, 0, 0 };
 int dollCyclesDone[3] = { 0, 0, 0 };
 const int dollMaxCycles = 3;
 int playerWorldX = 100;              // player's actual position in world
-const int jungleMiddleX = 465;       
+const int jungleMiddleX = 465;
 int jungleScreenPlayerY = 110;
 bool jungleDead = false;
 
@@ -39,13 +41,59 @@ int pickupPaperFrame = 0;
 int pickupPaperTimer = 0;
 int activePaperIndex = -1;
 
+int rockWorldX[3];
+const int rockWidth = 120;
+const int rockHeight = 100;
+const int rockY = 100; // ground-aligned with player feet (jungleScreenPlayerY 110 + height 150 = 260)
 
-void drawJungleBackground()
+void initJungleRocks()
 {
 	for (int i = 0; i < 3; i++)
 	{
+		int screenStart = i * jungleScreenWidth;
+		rockWorldX[i] = screenStart + 300 + (rand() % 400); // random within each screen, away from edges
+	}
+}
+
+bool jumpingJungle = false;
+int jungleJumpFrame = 0;
+int jungleJumpTimer = 0;
+
+const int jumpMaxHeight = 140;
+// jumpFrameCount is defined in Level3_Assets.hpp (8 frames)
+
+void drawJungleBackground()
+{
+	for (int i = 0; i < 7; i++)
+	{
 		int bgScreenX = (i * jungleScreenWidth) - jungleWorldX;
-		iShowImage(bgScreenX, 0, jungleScreenWidth, 600, jungleBgImg[i]);
+
+		if (i < 3)
+			iShowImage(bgScreenX, 0, jungleScreenWidth, 600, jungleBgImg[i]);
+		else
+			iShowImage(bgScreenX, 0, jungleScreenWidth, 600, riverBgImg[i - 3]);
+	}
+
+	drawRiverProps(jungleWorldX, 3);
+}
+
+
+void drawJungleProps()
+{
+	int propWidth = 210;   //  prop1.png actual width
+	int propHeight = 210;  // actual height
+	int boundaryWorldX = jungleScreenWidth; // = 1000, screen1/screen2  seam
+
+	int propScreenX = boundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
+	iShowImage(propScreenX, 147, propWidth, propHeight, prop1Img);
+}
+
+void drawJungleRocks()
+{
+	for (int i = 0; i < 3; i++)
+	{
+		int screenX = rockWorldX[i] - jungleWorldX;
+		iShowImage(screenX, rockY, rockWidth, rockHeight, rockImg);
 	}
 }
 
@@ -71,6 +119,14 @@ void drawJunglePlayer()
 	if (pickingUpPaper)
 	{
 		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, pickupImg[pickupPaperFrame]);
+		return;
+	}
+	if (jumpingJungle)
+	{
+		// CHANGED: 5.0f -> (jumpFrameCount - 1), so 8 frames work
+		float jumpProgress = jungleJumpFrame / (float)(jumpFrameCount - 1);
+		int jumpOffset = (int)(sinf(jumpProgress * 3.14159f) * jumpMaxHeight);
+		iShowImage(screenPlayerX, jungleScreenPlayerY + jumpOffset, 120, 150, jumpImg[jungleJumpFrame]);
 		return;
 	}
 
@@ -147,74 +203,107 @@ void drawJunglePapers()
 
 void updateJungle()
 {
-		if (jungleDead)
-			return;
+	if (jungleDead)
+		return;
 
-		if (pickingUpPaper)
+	if (pickingUpPaper)
+	{
+		pickupPaperTimer++;
+		if (pickupPaperTimer >= 8)
 		{
-			pickupPaperTimer++;
-			if (pickupPaperTimer >= 8)
+			pickupPaperTimer = 0;
+			pickupPaperFrame++;
+			if (pickupPaperFrame > 4)
 			{
+				pickingUpPaper = false;
+				pickupPaperFrame = 0;
+				if (activePaperIndex != -1)
+					paperCollected[activePaperIndex] = true;
+				activePaperIndex = -1;
+			}
+		}
+		return;
+	}
+
+	// Down arrow: kache paper thakle pickup shuru
+	if (isSpecialKeyPressed(GLUT_KEY_DOWN))
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			if (!paperCollected[i] && abs(playerWorldX - paperWorldX[i]) < 60)
+			{
+				pickingUpPaper = true;
+				pickupPaperFrame = 0;
 				pickupPaperTimer = 0;
-				pickupPaperFrame++;
-				if (pickupPaperFrame > 4)
-				{
-					pickingUpPaper = false;
-					pickupPaperFrame = 0;
-					if (activePaperIndex != -1)
-						paperCollected[activePaperIndex] = true;
-					activePaperIndex = -1;
-				}
+				activePaperIndex = i;
+				return;
 			}
-			return;
 		}
+	}
 
-		// Down arrow: kache paper thakle pickup shuru
-		if (isSpecialKeyPressed(GLUT_KEY_DOWN))
+	if (!jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT))
+		jumpingJungle = true;
+
+	if (jumpingJungle)
+	{
+		jungleJumpTimer++;
+		if (jungleJumpTimer >= 4)
 		{
-			for (int i = 0; i < 3; i++)
+			jungleJumpTimer = 0;
+			jungleJumpFrame++;
+			// CHANGED: > 5 -> >= jumpFrameCount, so all 8 frames play
+			if (jungleJumpFrame >= jumpFrameCount)
 			{
-				if (!paperCollected[i] && abs(playerWorldX - paperWorldX[i]) < 60)
+				jumpingJungle = false;
+				jungleJumpFrame = 0;
+
+				for (int i = 0; i < 3; i++)
 				{
-					pickingUpPaper = true;
-					pickupPaperFrame = 0;
-					pickupPaperTimer = 0;
-					activePaperIndex = i;
-					return;
+					if (playerWorldX + 120 > rockWorldX[i] && playerWorldX < rockWorldX[i] + rockWidth)
+						playerWorldX = rockWorldX[i] + rockWidth;
 				}
 			}
 		}
+	}
+	bool isMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT);
 
-	
-
-		bool isMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT);
-
-		if (isMoving)
+	if (isMoving && playerWorldX < jungleScreenWidth * 3)
+	{
+		for (int i = 0; i < 3; i++)
 		{
-			for (int i = 0; i < 3; i++)
+			if (dollState[i] == 2)
 			{
-				if (dollState[i] == 2)  
-				{
-					jungleDead = true;
-					return;
-				}
+				jungleDead = true;
+				return;
 			}
 		}
+	}
 
-	
+
 	const int playerWidth = 120;
-	int worldMax = jungleTotalWidth - playerWidth;   
+	int worldMax = jungleTotalWidth - playerWidth;
 
 	if (isSpecialKeyPressed(GLUT_KEY_RIGHT))
 	{
 		jungleFacingRight = true;
 
-		if (playerWorldX < worldMax)
-			playerWorldX += 5;
+		bool blockedByRock = false;
+		if (!jumpingJungle)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				if (playerWorldX + 120 > rockWorldX[i] && playerWorldX < rockWorldX[i] + rockWidth)
+					blockedByRock = true;
+			}
+		}
 
-	
+		int moveSpeed = jumpingJungle ? 10 : 5;
+
+		if (playerWorldX < worldMax && !blockedByRock)
+			playerWorldX += moveSpeed;
+
 		if ((playerWorldX - jungleWorldX) > jungleMiddleX && jungleWorldX < jungleMaxScroll)
-			jungleWorldX += 5;
+			jungleWorldX += moveSpeed;
 
 		if (jungleWorldX > jungleMaxScroll)
 			jungleWorldX = jungleMaxScroll;
@@ -258,12 +347,15 @@ void updateJungle()
 }
 void drawDontMoveSign()
 {
+	if (playerWorldX >= jungleScreenWidth * 3)
+		return;
+
 	for (int i = 0; i < 3; i++)
 	{
 		if (dollState[i] == 1 || dollState[i] == 2)
 		{
-			iShowImage(400, 500, 200, 80, dontMoveImg); 
-			return;  
+			iShowImage(400, 500, 200, 80, dontMoveImg);
+			return;
 		}
 	}
 }

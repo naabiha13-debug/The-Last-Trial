@@ -6,18 +6,22 @@
 #include "Level3_Player.hpp"
 #include "WaitingRoom.hpp"
 #include "Jungle.hpp"
+#include "river.hpp"
 
 void drawLevel3()
 {
 	if (waitingRoomStage == 6)
 	{
 		drawJungleBackground();
+		drawJungleProps();
+		drawJungleRocks();
 		drawJungleDolls();
 		drawJunglePapers();
 		drawJunglePlayer();
 		drawDontMoveSign();
 		return;
 	}
+
 		
 
 	iShowImage(0, 0, 1000, 600, waitingRoom);

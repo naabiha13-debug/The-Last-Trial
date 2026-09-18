@@ -99,6 +99,12 @@
     <ClInclude Include="Jungle.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="river.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WaitingroomHint.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iMain.cpp">
