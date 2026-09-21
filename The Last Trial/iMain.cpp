@@ -43,7 +43,10 @@ void iDraw()
 	}
 	else if (currentScreen == 6)
 	{
-		drawLevel3();
+		if (l3IntroActive)
+			drawL3Intro();
+		else
+			drawLevel3();
 	}
 }
 
@@ -170,6 +173,7 @@ void iMouse(int button, int state, int mx, int my)
 				currentScreen = 6;
 				loadLevel3Assets();
 				initJungleRocks();
+				startL3Intro();
 
 				stopMenuMusic();
 			}
@@ -304,18 +308,23 @@ void fixedUpdate()
 	// Level 3
 	if (currentScreen == 6)
 	{
-		if (waitingRoomStage == 6)
+		if (l3IntroActive)
 		{
-			updateJungle();
-			updateJungleDolls();
-
+			updateL3Intro();
 		}
 		else
 		{
-			updateLevel3Player();
-		}
+			if (waitingRoomStage == 6)
+			{
+				updateJungle();
+				updateJungleDolls();
+			}
+			else
+			{
+				updateLevel3Player();
+			}
 			updateWaitingRoomStage();
-		
+		}
 	}
 	
 	

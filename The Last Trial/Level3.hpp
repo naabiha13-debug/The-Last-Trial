@@ -19,16 +19,15 @@ void drawLevel3()
 		drawJunglePapers();
 		drawJunglePlayer();
 		drawDontMoveSign();
+		drawDoorTransition();
 		return;
 	}
-
-		
 
 	iShowImage(0, 0, 1000, 600, waitingRoom);
 	if (waitingRoomStage != 4)
 		drawLevel3Player();
 	drawWaitingRoomStage();
+	drawDoorTransition();
 }
-
 
 #endif

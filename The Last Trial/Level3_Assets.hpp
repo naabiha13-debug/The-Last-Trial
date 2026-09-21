@@ -10,6 +10,12 @@ int waitingRoom;
 int l3walkFImg[9];
 // Backward (left) walk frames
 int l3walkBImg[9];
+int exploreImg;   // 
+int lampImg[8];
+int l3IntroImg[3];
+int keyMsgImg;
+int keyFitsImg;
+
 
 //WaitingRoom
 int cueImg;
@@ -31,7 +37,20 @@ int prop2Img;
 
 void loadLevel3Assets()
 {
+	exploreImg = iLoadImage("Image//explore.png");   
+	keyMsgImg = iLoadImage("Image//key.png");  
+	keyFitsImg = iLoadImage("Image//keyFits.png");
+	for (int i = 0; i < 3; i++)
+	{
+		std::string introPath = "Image//l3g" + std::to_string(i + 1) + ".png";
+		l3IntroImg[i] = iLoadImage((char*)introPath.c_str());
+	}
 	waitingRoom = iLoadImage("Image//waitingroom.png");
+	for (int i = 0; i < 8; i++)
+	{
+		std::string lampPath = "Image//light" + std::to_string(i + 1) + ".png";
+		lampImg[i] = iLoadImage((char*)lampPath.c_str());
+	}
 
 	for (int i = 0; i < 9; i++)
 	{

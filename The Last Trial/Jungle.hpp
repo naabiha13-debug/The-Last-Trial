@@ -12,8 +12,6 @@ const int jungleTotalWidth = 7000;
 const int jungleScreenWidth = 1000;
 const int jungleMaxScroll = jungleTotalWidth - jungleScreenWidth; // 2000
 
-
-
 int jungleFrame = 0;
 int jungleWalkTimer = 0;
 bool jungleFacingRight = true;
