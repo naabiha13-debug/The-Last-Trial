@@ -69,6 +69,7 @@ int usbCollectedImg;
 int usbImg;
 int usbSuccessImg;
 int gameOverJungleImg, gameOverRiverImg, gameOverControlImg, backBtnImg, againBtnImg;
+int axeImg;
 
 
 void loadLevel3Assets()
@@ -185,7 +186,7 @@ void loadLevel3Assets()
 
 	mImg = iLoadImage("Image//m.png");
 	mergeImg = iLoadImage("Image//merge.png");
-
+	axeImg = iLoadImage("Image//axe.png");
 	for (int i = 0; i < 3; i++)
 	{
 		std::string path = "Image//c" + std::to_string(i + 1) + ".png";

@@ -136,6 +136,8 @@ void initBottles()
 	}
 }
 
+                                                                   
+
 void drawJungleProps(bool frontPass);   // defined below
 
 // Jump animation state
@@ -177,6 +179,7 @@ void drawJungleBackground()
 	}
 	initTrees(3);
 	initBottles();
+	initAxe(3);
 
 	drawBirds(jungleWorldX, 3);
 	drawRiverWaves(jungleWorldX, 3);
@@ -184,6 +187,7 @@ void drawJungleBackground()
 
 	drawJungleProps(false);   // props behind the boat
 	drawBottles(false);       // bottles that sit "behind" the boat's current Y
+	drawAxe(jungleWorldX, false);
 	drawTrees(jungleWorldX, false);
 
 	bool nearRiverStart = !inBoat && !boardingBoat && !reachedRiverEnd &&
@@ -201,6 +205,7 @@ void drawJungleBackground()
 
 	drawJungleProps(true);    // props in front of the boat
 	drawBottles(true);        // bottles that sit "in front of" the boat's current Y
+	drawAxe(jungleWorldX, true);
 	drawTrees(jungleWorldX, true);
 }
 
@@ -530,6 +535,7 @@ void updateJungle()
 	updateRiverWaves();
 	updateBirds();
 	updateBottles();
+	updateAxe(playerWorldX);
 
 	if (inBoat)
 	{

@@ -230,6 +230,7 @@ int treeY[treeCount];
 bool treeInit = false;
 bool boatHitTree = false;   // jungle.hpp ei flag check kore game-over korbe
 int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
+
 void initTrees(int jungleScreenCount)
 {
 	if (treeInit) return;
@@ -265,7 +266,7 @@ void drawTrees(int worldX, bool frontPass)
 		{
 			int screenX = treeWorldX[i] - worldX;
 			if (screenX > -treeWidth && screenX < 1000)
-				iShowImage(screenX, treeY[i], treeWidth+30, treeHeight-30, treeImg);
+				iShowImage(screenX, treeY[i], treeWidth + 20, treeHeight - 20, treeImg);
 		}
 	}
 }
@@ -285,5 +286,43 @@ void updateTrees(int boatWorldX)
 	}
 }
 
+// ---------------- Axe (one-time pickup) ----------------
+
+int axeWorldX;
+int axeY;
+bool axeCollected = false;
+bool axeInit = false;
+
+void initAxe(int jungleScreenCount)
+{
+	if (axeInit) return;
+	axeInit = true;
+
+	int zoneStart = jungleScreenCount * riverScreenWidth + waveStartX;
+	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + waveEndX;
+
+	axeWorldX = zoneStart + (rand() % (zoneEnd - zoneStart));
+	axeY = boatMinY + (rand() % (boatMaxY - boatMinY));
+}
+
+void drawAxe(int worldX, bool frontPass)
+{
+	if (axeCollected) return;
+
+	if ((axeY <= boatY) == frontPass)
+	{
+		int sx = axeWorldX - worldX;
+		if (sx > -60 && sx < 1060)
+			iShowImage(sx, axeY, 60, 60, axeImg);
+	}
+}
+
+void updateAxe(int boatWorldX)
+{
+	if (!inBoat || axeCollected) return;
+
+	if (abs((boatWorldX + 40) - axeWorldX) < 60 && abs((boatY + 40) - axeY) < 60)
+		axeCollected = true;
+}
 
 #endif
