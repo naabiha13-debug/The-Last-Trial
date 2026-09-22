@@ -9,12 +9,19 @@
 #include "river.hpp"
 #include "Pinkeypad addition.hpp"
 
+#include "ControlRoom.hpp"  
+
 void drawLevel3()
 {
 	if (waitingRoomStage == 6)
 	{
+		if (pinUnlocked)
+		{
+			drawControlRoom();
+			return;
+		}
+
 		drawJungleBackground();
-		
 		drawJungleRocks();
 		drawJungleDolls();
 		drawJunglePapers();

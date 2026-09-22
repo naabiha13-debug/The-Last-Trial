@@ -48,6 +48,13 @@ int mImg;
 int mergeImg;
 int treePropImg[2];
 
+int controlRoomBgImg[3];
+int controlRoomMonitorImg;
+int gunImg;
+int crAttackImg[6];
+int guardWalkImg[4];
+int guardAttackImg[5];
+
 
 void loadLevel3Assets()
 {
@@ -155,6 +162,31 @@ void loadLevel3Assets()
 
 	mImg = iLoadImage("Image//m.png");
 	mergeImg = iLoadImage("Image//merge.png");
+
+	for (int i = 0; i < 3; i++)
+	{
+		std::string path = "Image//c" + std::to_string(i + 1) + ".png";
+		controlRoomBgImg[i] = iLoadImage((char*)path.c_str());
+	}
+	controlRoomMonitorImg = iLoadImage("Image//monitor.png");   
+	gunImg = iLoadImage("Image//gun.png");
+
+	for (int i = 0; i < 6; i++)
+	{
+		std::string path = "Image//attack" + std::to_string(i + 1) + ".png";
+		crAttackImg[i] = iLoadImage((char*)path.c_str());
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		std::string path = "Image//Guardwalk" + std::to_string(i + 1) + ".png";
+		guardWalkImg[i] = iLoadImage((char*)path.c_str());
+	}
+	for (int i = 0; i < 5; i++)
+	{
+		std::string path = "Image//GuardAttack" + std::to_string(i + 1) + ".png";
+		guardAttackImg[i] = iLoadImage((char*)path.c_str());
+	}
 }
 
 #endif

@@ -59,6 +59,8 @@ bool showPinFinal = false;
 // Defined in the pin keypad file, included after this one.
 void handlePinKeypadClick(int mx, int my);
 void drawPinDisplay();
+extern bool pinUnlocked;                       
+void handleControlRoomClick(int mx, int my);
 
 // Screen box for the control room door.
 // TODO: fine-tune these four numbers by testing in-game.
@@ -341,6 +343,12 @@ void drawPinFinal()
 
 void handleJungleClick(int mx, int my)
 {
+		if (pinUnlocked)
+		{
+			handleControlRoomClick(mx, my);
+			return;
+		}
+
 	if (showPinFinal)
 	{
 		handlePinKeypadClick(mx, my);
