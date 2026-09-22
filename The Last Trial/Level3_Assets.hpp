@@ -10,12 +10,13 @@ int waitingRoom;
 int l3walkFImg[9];
 // Backward (left) walk frames
 int l3walkBImg[9];
-int exploreImg;   // 
+
+// Teammate's additions
+int exploreImg;
 int lampImg[8];
 int l3IntroImg[3];
 int keyMsgImg;
 int keyFitsImg;
-
 
 //WaitingRoom
 int cueImg;
@@ -29,16 +30,21 @@ int dontMoveImg;
 int paperImg;
 int prop1Img;
 int riverBgImg[4];
-const int jumpFrameCount = 8;   // CHANGED: total jump frames (frame_01 .. frame_08)
-int jumpImg[jumpFrameCount];    // CHANGED: was jumpImg[6]
+int waveImg[3];
+const int jumpFrameCount = 8;
+int jumpImg[jumpFrameCount];
 int rockImg;
 int prop2Img;
+int boatNormalImg, boatRightUpImg, boatLeftUpImg;
+int boatPlayerImg[4];
+int birdImg[9];
+int backBirdImg[9];
 
 
 void loadLevel3Assets()
 {
-	exploreImg = iLoadImage("Image//explore.png");   
-	keyMsgImg = iLoadImage("Image//key.png");  
+	exploreImg = iLoadImage("Image//explore.png");
+	keyMsgImg = iLoadImage("Image//key.png");
 	keyFitsImg = iLoadImage("Image//keyFits.png");
 	for (int i = 0; i < 3; i++)
 	{
@@ -94,9 +100,13 @@ void loadLevel3Assets()
 	dontMoveImg = iLoadImage("Image//dontmove.png");
 	paperImg = iLoadImage("Image//paper.png");
 	prop1Img = iLoadImage("Image//prop1.png");
-	prop2Img = iLoadImage("Image//prop2.png");
 
-	// CHANGED: load all 8 jump frames in order (frame_01.png ... frame_08.png)
+	for (int i = 0; i < 3; i++)
+	{
+		std::string wavePath = "Image//wave_strip_" + std::to_string(i + 1) + ".png";
+		waveImg[i] = iLoadImage((char*)wavePath.c_str());
+	}
+
 	for (int i = 0; i < jumpFrameCount; i++)
 	{
 		std::string num = (i + 1 < 10) ? ("0" + std::to_string(i + 1)) : std::to_string(i + 1);
@@ -104,6 +114,22 @@ void loadLevel3Assets()
 		jumpImg[i] = iLoadImage((char*)jumpPath.c_str());
 	}
 	rockImg = iLoadImage("Image//rock.png");
+
+	boatNormalImg = iLoadImage("Image//boat_normal.png");
+	boatRightUpImg = iLoadImage("Image//boat_right_up.png");
+	boatLeftUpImg = iLoadImage("Image//boat_left_up.png");
+
+	for (int i = 0; i < 4; i++)
+	{
+		std::string boatPlayerPath = "Image//boat" + std::to_string(i + 1) + ".png";
+		boatPlayerImg[i] = iLoadImage((char*)boatPlayerPath.c_str());
+	}
+
+	for (int i = 0; i < 9; i++)
+	{
+		birdImg[i] = iLoadImage((char*)("Image//bird" + std::to_string(i + 1) + ".png").c_str());
+		backBirdImg[i] = iLoadImage((char*)("Image//bb" + std::to_string(i + 1) + ".png").c_str());
+	}
 }
 
 #endif
