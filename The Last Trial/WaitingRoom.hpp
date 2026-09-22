@@ -60,6 +60,7 @@ void updateL3Intro()
 
 			showExploreMsg = true;
 			exploreMsgTimer = 0;
+			playLevel3Music();
 		}
 	}
 }

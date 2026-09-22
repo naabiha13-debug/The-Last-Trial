@@ -13,6 +13,10 @@ int y = 0;
 
 int currentScreen = 0;
 bool mergeDebugKeyLatched = false;
+bool level1MusicStopped = false;
+bool level2MusicStopped = false;
+bool level3MusicStopped = false;
+
 void iDraw()
 {
 	iClear();
@@ -254,6 +258,7 @@ void iMouse(int button, int state, int mx, int my)
 			if (hitBack)
 			{
 				currentScreen = 2;
+				playMenuMusic();
 			}
 		}
 		else if (currentScreen == 6)
@@ -272,6 +277,7 @@ void iMouse(int button, int state, int mx, int my)
 					jungleDead = false;
 					pinWrong = false;
 					crPlayerDefeated = false;
+					playMenuMusic();
 				}
 			}
 			else if (waitingRoomStage == 6)
@@ -295,6 +301,16 @@ void fixedUpdate()
 	if (currentScreen == 1)
 	{
 		level1Update();
+
+		if (level1GameOver && !level1MusicStopped)
+		{
+			stopLevel1Music();
+			level1MusicStopped = true;
+		}
+		if (!level1GameOver)
+		{
+			level1MusicStopped = false;
+		}
 	}
 	if (currentScreen == 5)
 	{
@@ -308,6 +324,7 @@ void fixedUpdate()
 				bridgeStartTime = GetTickCount();
 				botHealthDecayTime = GetTickCount();
 				playerHealthDecayTime = GetTickCount();
+				playLevel2Music();
 			}
 
 			if (!level2Intro)
@@ -324,6 +341,12 @@ void fixedUpdate()
 				}
 			}
 		}
+	}
+
+	
+	if (currentScreen == 5 && level2GameOver)       
+	{
+		mciSendString("stop level2song", NULL, 0, NULL);
 	}
 
 	// Level 3
@@ -354,6 +377,18 @@ void fixedUpdate()
 			updateWaitingRoomStage();
 		}
 	}
+
+	if (currentScreen == 6 && isGameOver() && !level3MusicStopped)
+	{
+		stopLevel3Music();
+		level3MusicStopped = true;
+	}
+	if (currentScreen == 6 && !isGameOver())
+	{
+		level3MusicStopped = false;
+	}
+
+	
 
 
 	// Free-roam WASD/arrow controls (used outside level 1)
@@ -394,6 +429,9 @@ void fixedUpdate()
 	else
 	{
 		mergeDebugKeyLatched = false;
+	    bool level1MusicStopped = false;
+		bool level2MusicStopped = false;
+		bool level3MusicStopped = false;
 	}
 
 	// Enter advances from the title screen to the loading screen

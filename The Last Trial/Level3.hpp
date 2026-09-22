@@ -48,6 +48,7 @@ void retryFromGameOver()
 		crMaskRawHitsOnPlayer = 0;
 		crPlayerRawHitsOnMask = 0;
 	}
+	playLevel3Music();
 }
 
 void drawGameOverScreen()
