@@ -173,7 +173,7 @@ void iMouse(int button, int state, int mx, int my)
 				currentScreen = 6;
 				loadLevel3Assets();
 				initJungleRocks();
-				//startL3Intro();
+				startL3Intro();
 
 				stopMenuMusic();
 			}
@@ -266,7 +266,7 @@ void iMouse(int button, int state, int mx, int my)
 			{
 				handleWaitingRoomClick(mx, my);
 			}
-		
+
 		}
 	}
 }
@@ -326,7 +326,7 @@ void fixedUpdate()
 			{
 				if (pinUnlocked)
 				{
-					updateControlRoom();         
+					updateControlRoom();
 				}
 				else
 				{
@@ -411,15 +411,6 @@ int main()
 	iInitialize(1000, 600, "The Last Trial");
 	initMenu();
 	iSetTimer(15, updateCharacterAnimation);
-
-	/*loadLevel3Assets();
-	initJungleRocks();
-	currentScreen = 6;
-	l3IntroActive = false;
-	waitingRoomStage = 6;
-	pinUnlocked = true;*/
-	
-
 	iStart();
 	return 0;
 }

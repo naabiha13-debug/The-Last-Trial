@@ -47,6 +47,7 @@ int pinImg;    // final pin image, shown at the end of the click sequence
 int mImg;
 int mergeImg;
 int treePropImg[2];
+int paperPickupImg[5];   // <-- merged in from teammate's second version
 
 int controlRoomBgImg[3];
 int controlRoomMonitorImg;
@@ -54,7 +55,8 @@ int gunImg;
 int crAttackImg[6];
 int guardWalkImg[4];
 int guardAttackImg[5];
-
+int bottleImg;
+int treeImg;
 
 void loadLevel3Assets()
 {
@@ -82,6 +84,13 @@ void loadLevel3Assets()
 
 		std::string backwardPath = "Image//walk_backward_frame_" + num + ".png";
 		l3walkBImg[i] = iLoadImage((char*)backwardPath.c_str());
+	}
+
+	// merged: paper pickup animation frames
+	for (int i = 0; i < 5; i++)
+	{
+		std::string paperPickupPath = "Image//pickPaper-" + std::to_string(i + 1) + ".png";
+		paperPickupImg[i] = iLoadImage((char*)paperPickupPath.c_str());
 	}
 
 	cueImg = iLoadImage("Image//cue.png");
@@ -142,7 +151,8 @@ void loadLevel3Assets()
 	boatNormalImg = iLoadImage("Image//boat_normal.png");
 	boatRightUpImg = iLoadImage("Image//boat_right_up.png");
 	boatLeftUpImg = iLoadImage("Image//boat_left_up.png");
-
+	bottleImg=iLoadImage( "Image//Bottol.png");
+	treeImg = iLoadImage("Image//tree.png");
 	for (int i = 0; i < 4; i++)
 	{
 		std::string boatPlayerPath = "Image//boat" + std::to_string(i + 1) + ".png";
@@ -168,7 +178,7 @@ void loadLevel3Assets()
 		std::string path = "Image//c" + std::to_string(i + 1) + ".png";
 		controlRoomBgImg[i] = iLoadImage((char*)path.c_str());
 	}
-	controlRoomMonitorImg = iLoadImage("Image//monitor.png");   
+	controlRoomMonitorImg = iLoadImage("Image//monitor.png");
 	gunImg = iLoadImage("Image//gun.png");
 
 	for (int i = 0; i < 6; i++)

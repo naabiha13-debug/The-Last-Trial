@@ -59,8 +59,6 @@ bool showPinFinal = false;
 // Defined in the pin keypad file, included after this one.
 void handlePinKeypadClick(int mx, int my);
 void drawPinDisplay();
-extern bool pinUnlocked;                       
-void handleControlRoomClick(int mx, int my);
 
 // Screen box for the control room door.
 // TODO: fine-tune these four numbers by testing in-game.
@@ -73,6 +71,7 @@ const int controlRoomBtnH = 168;
 int paperWorldX[3] = { 650, 1650, 2750 };
 int paperY = 100;
 bool paperCollected[3] = { false, false, false };
+int hintsCollected = 0;
 
 // Paper pickup animation state
 bool pickingUpPaper = false;
@@ -91,7 +90,49 @@ void initJungleRocks()
 	for (int i = 0; i < 3; i++)
 	{
 		int screenStart = i * jungleScreenWidth;
-		rockWorldX[i] = screenStart + 300 + (rand() % 400);
+		rockWorldX[i] = screenStart + 200 + (rand() % 300);   // shifted further left
+	}
+}
+
+// ---------------- Bottle (extra hint pickups, scattered across the river) ----------------
+// NOTE: "bottleImg" must be declared and loaded in Level3_Assets.hpp
+// (e.g. `int bottleImg;` loaded via iLoadImage/iLoadPNG pointing to "Bottol.png")
+// before this will actually draw anything.
+
+const int bottleCount = 3;
+int bottleWorldX[bottleCount];
+int bottleY[bottleCount];
+bool bottleCollected[bottleCount] = { false, false, false };
+bool bottleInit = false;
+
+void initBottles()
+{
+	if (bottleInit) return;
+	bottleInit = true;
+
+	int zoneStart = riverStartWorldX;
+	int zoneSpan = riverEndWorldX - riverStartWorldX - 80;
+
+	for (int i = 0; i < bottleCount; i++)
+	{
+		int candidateX;
+		bool tooCloseToTree;
+		do
+		{
+			candidateX = zoneStart + (rand() % zoneSpan);
+			tooCloseToTree = false;
+			for (int j = 0; j < treeCount; j++)
+			{
+				if (abs(candidateX - treeWorldX[j]) < 100)
+				{
+					tooCloseToTree = true;
+					break;
+				}
+			}
+		} while (tooCloseToTree);
+
+		bottleWorldX[i] = candidateX;
+		bottleY[i] = boatMinY + (rand() % (boatMaxY - boatMinY));
 	}
 }
 
@@ -102,6 +143,26 @@ bool jumpingJungle = false;
 int jungleJumpFrame = 0;
 int jungleJumpTimer = 0;
 const int jumpMaxHeight = 140;
+
+// frontPass = false draws bottles behind the boat, true draws bottles in front of it
+void drawBottles(bool frontPass)
+{
+	for (int i = 0; i < bottleCount; i++)
+	{
+		if (bottleCollected[i])
+			continue;
+
+		// If bottle's Y is <= boat's Y (bottle is "above"/behind in stacking),
+		// draw it in the frontPass == false pass (behind boat).
+		// Otherwise draw it in the frontPass == true pass (in front of / above boat).
+		if ((bottleY[i] <= boatY) == frontPass)
+		{
+			int screenX = bottleWorldX[i] - jungleWorldX;
+			if (screenX > -60 && screenX < 1060)
+				iShowImage(screenX, bottleY[i], 60, 60, bottleImg);
+		}
+	}
+}
 
 void drawJungleBackground()
 {
@@ -114,23 +175,32 @@ void drawJungleBackground()
 		else
 			iShowImage(bgScreenX, 0, jungleScreenWidth, 600, riverBgImg[i - 3]);
 	}
+	initTrees(3);
+	initBottles();
 
 	drawBirds(jungleWorldX, 3);
 	drawRiverWaves(jungleWorldX, 3);
 	drawUpperWaveRow(jungleWorldX, 3);
 
 	drawJungleProps(false);   // props behind the boat
+	drawBottles(false);       // bottles that sit "behind" the boat's current Y
+	drawTrees(jungleWorldX, false);
 
-	bool boatVisible = inBoat || reachedRiverEnd || boardingBoat;
+	bool nearRiverStart = !inBoat && !boardingBoat && !reachedRiverEnd &&
+		(riverStartWorldX - jungleWorldX) > -boatWidth &&
+		(riverStartWorldX - jungleWorldX) < jungleScreenWidth;
+
+	bool boatVisible = inBoat || reachedRiverEnd || boardingBoat || nearRiverStart;
 	if (boatVisible)
 	{
 		int boatWorldX = inBoat ? playerWorldX : (reachedRiverEnd ? (riverEndWorldX - boatWidth) : riverStartWorldX);
 		bool boatMoving = inBoat && isSpecialKeyPressed(GLUT_KEY_RIGHT);
-		bool showBoatPlayer = inBoat || boardingBoat;   // show player on the boat while boarding too
+		bool showBoatPlayer = inBoat;  // show player on the boat while boarding too
 		drawBoat(jungleWorldX, boatWorldX, boatMoving, showBoatPlayer);
 	}
 
 	drawJungleProps(true);    // props in front of the boat
+	drawBottles(true);        // bottles that sit "in front of" the boat's current Y
 }
 
 // frontPass = false draws props behind the boat, true draws props in front of it
@@ -139,6 +209,9 @@ void drawJungleProps(bool frontPass)
 	int propWidth = 210;
 	int propHeight = 210;
 	int boundaryWorldX = jungleScreenWidth;
+
+	// Fixed baseline for prop positions 
+	const int boatRestY = 100;
 
 	int propScreenX = boundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
 	int propY = 147;
@@ -161,7 +234,8 @@ void drawJungleProps(bool frontPass)
 	int river1PropWorldX = riverBoundaryWorldX + 300;
 	int river1PropScreenX = river1PropWorldX - jungleWorldX;
 
-	int prop4Y = boatY + 70;
+	// prop position fixed 
+	int prop4Y = boatRestY + 70;
 	if ((prop4Y <= boatY) == frontPass)
 		iShowImage(river1PropScreenX - 75, prop4Y, propWidth, propHeight - 20, propImg[3]);
 
@@ -170,7 +244,7 @@ void drawJungleProps(bool frontPass)
 	if ((152 <= boatY) == frontPass)
 		iShowImage(river3to4PropScreenX - 20, 152, propWidth + 10, propHeight, propImg[1]);
 
-	int prop5Y = boatY - 120;
+	int prop5Y = boatRestY - 120;
 	if ((prop5Y <= boatY) == frontPass)
 		iShowImage(river1PropScreenX - 80, prop5Y, propWidth + 10, propHeight + 10, propImg[0]);
 }
@@ -201,22 +275,25 @@ void drawJunglePlayer()
 	if (jungleDead)
 		return;
 
-	if (inBoat || boardingBoat)   // boat already shows the player while boarding
+	if (inBoat)   // fully seated — boat itself draws the rider now
 		return;
 
 	if (pickingUpPaper)
 	{
-		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, pickupImg[pickupPaperFrame]);
+		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, paperPickupImg[pickupPaperFrame]);
 		return;
 	}
 
-	if (jumpingJungle)
+	if (jumpingJungle)   // covers both rock-jumps AND boarding the boat
 	{
 		float jumpProgress = jungleJumpFrame / (float)(jumpFrameCount - 1);
 		int jumpOffset = (int)(sinf(jumpProgress * 3.14159f) * jumpMaxHeight);
 		iShowImage(screenPlayerX, jungleScreenPlayerY + jumpOffset, 120, 150, jumpImg[jungleJumpFrame]);
 		return;
 	}
+
+	if (boardingBoat)   // fallback safety — shouldn't normally hit since boardingBoat only true while jumpingJungle
+		return;
 
 	if (jungleFacingRight)
 		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, l3walkFImg[jungleFrame]);
@@ -280,12 +357,18 @@ void drawJunglePapers()
 {
 	for (int i = 0; i < 3; i++)
 	{
-		if (!paperCollected[i] && i != activePaperIndex)
-		{
-			int screenX = paperWorldX[i] - jungleWorldX;
-			if (screenX > -50 && screenX < 1050)
-				iShowImage(screenX, paperY, 80, 80, paperImg);
-		}
+		if (paperCollected[i])
+			continue;
+
+		// While this paper is being picked up, keep showing the ground copy
+		// for the first 2 pickup frames, then hide it.
+		bool isBeingPicked = (i == activePaperIndex) && pickingUpPaper;
+		if (isBeingPicked && pickupPaperFrame >= 2)
+			continue;
+
+		int screenX = paperWorldX[i] - jungleWorldX;
+		if (screenX > -50 && screenX < 1050)
+			iShowImage(screenX, paperY, 80, 80, paperImg);
 	}
 }
 
@@ -343,12 +426,6 @@ void drawPinFinal()
 
 void handleJungleClick(int mx, int my)
 {
-		if (pinUnlocked)
-		{
-			handleControlRoomClick(mx, my);
-			return;
-		}
-
 	if (showPinFinal)
 	{
 		handlePinKeypadClick(mx, my);
@@ -393,6 +470,27 @@ void handleJungleClick(int mx, int my)
 	}
 }
 
+void updateBottles()
+{
+	if (!inBoat)
+		return;
+
+	for (int i = 0; i < bottleCount; i++)
+	{
+		if (bottleCollected[i])
+			continue;
+
+		int dx = abs((playerWorldX + 40) - bottleWorldX[i]);
+		int dy = abs((boatY + 40) - bottleY[i]);
+
+		if (dx < 60 && dy < 60)
+		{
+			bottleCollected[i] = true;
+			hintsCollected++;
+		}
+	}
+}
+
 void updateJungle()
 {
 	if (showMImage)
@@ -411,6 +509,7 @@ void updateJungle()
 
 	updateRiverWaves();
 	updateBirds();
+	updateBottles();
 
 	if (inBoat)
 	{
@@ -445,7 +544,10 @@ void updateJungle()
 				pickingUpPaper = false;
 				pickupPaperFrame = 0;
 				if (activePaperIndex != -1)
+				{
 					paperCollected[activePaperIndex] = true;
+					hintsCollected++;
+				}
 				activePaperIndex = -1;
 			}
 		}
@@ -456,7 +558,18 @@ void updateJungle()
 	{
 		for (int i = 0; i < 3; i++)
 		{
-			if (!paperCollected[i] && abs(playerWorldX - paperWorldX[i]) < 60)
+			if (paperCollected[i])
+				continue;
+
+			int diff = paperWorldX[i] - playerWorldX;   // positive = paper is to the right of player
+
+			bool nearPaper;
+			if (diff >= 0)
+				nearPaper = diff < 150;   // player slightly LEFT of paper — wider tolerance
+			else
+				nearPaper = (-diff) < 60; // player passed the paper — normal tolerance
+
+			if (nearPaper)
 			{
 				pickingUpPaper = true;
 				pickupPaperFrame = 0;
@@ -466,7 +579,6 @@ void updateJungle()
 			}
 		}
 	}
-
 	if (!inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT))
 	{
 		jumpingJungle = true;
@@ -628,6 +740,14 @@ void drawDistanceCounter()
 
 	iSetColor(255, 255, 255);
 	iText(650, 560, buffer, GLUT_BITMAP_HELVETICA_18);
+}
+void drawHintCounter()
+{
+	char buffer[64];
+	sprintf_s(buffer, sizeof(buffer), "Hint Collected: %d", hintsCollected);
+
+	iSetColor(255, 255, 255);
+	iText(10, 560, buffer, GLUT_BITMAP_HELVETICA_18);
 }
 
 #endif

@@ -35,6 +35,7 @@ void drawLevel3()
 		drawDontMoveSign();
 		drawDoorTransition();
 		drawDistanceCounter();
+		drawHintCounter();
 		return;
 	}
 
