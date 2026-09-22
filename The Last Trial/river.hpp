@@ -229,23 +229,34 @@ int treeWorldX[treeCount];
 int treeY[treeCount];
 bool treeInit = false;
 bool boatHitTree = false;   // jungle.hpp ei flag check kore game-over korbe
-
+int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
 void initTrees(int jungleScreenCount)
 {
 	if (treeInit) return;
 	treeInit = true;
 
 	int zoneStart = jungleScreenCount * riverScreenWidth + 40;
-	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2 + 50;
+
+	// River4 half
+	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2;
+
+	//gap between trees
+	int zoneSpan = zoneEnd - zoneStart;
+	int segmentWidth = zoneSpan / treeCount;
+
+	int treeMinY = boatMinY + 20;
+	int treeMaxY = boatMaxY - 20;
 
 	for (int i = 0; i < treeCount; i++)
 	{
-		treeWorldX[i] = zoneStart + (rand() % (zoneEnd - zoneStart));
-		treeY[i] = boatMinY + (rand() % (boatMaxY - boatMinY));
+		int segStart = zoneStart + i * segmentWidth;
+		treeWorldX[i] = segStart + (rand() % segmentWidth) - treeExtraShiftX[i];
+		treeY[i] = treeMinY + (rand() % (treeMaxY - treeMinY));
 	}
 }
 
-// frontPass = false -> tree boat er pichone, true -> tree boat er samne
+
+// frontPass = false -> tree behind boat, true frontt of boat
 void drawTrees(int worldX, bool frontPass)
 {
 	for (int i = 0; i < treeCount; i++)
@@ -254,12 +265,12 @@ void drawTrees(int worldX, bool frontPass)
 		{
 			int screenX = treeWorldX[i] - worldX;
 			if (screenX > -treeWidth && screenX < 1000)
-				iShowImage(screenX, treeY[i], treeWidth, treeHeight, treeImg);
+				iShowImage(screenX, treeY[i], treeWidth+30, treeHeight-30, treeImg);
 		}
 	}
 }
 
-// boatWorldX = boat er current world X (inBoat thakle ei ta playerWorldX)
+// boatWorldX = boat current world X 
 void updateTrees(int boatWorldX)
 {
 	if (!inBoat) return;

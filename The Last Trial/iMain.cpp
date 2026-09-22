@@ -12,7 +12,7 @@ int x = 0;
 int y = 0;
 
 int currentScreen = 0;
-
+bool mergeDebugKeyLatched = false;
 void iDraw()
 {
 	iClear();
@@ -258,7 +258,23 @@ void iMouse(int button, int state, int mx, int my)
 		}
 		else if (currentScreen == 6)
 		{
-			if (waitingRoomStage == 6)
+			if (isGameOver())
+			{
+				if (mx >= gameOverAgainX && mx <= gameOverAgainX + gameOverAgainW &&
+					my >= gameOverAgainY && my <= gameOverAgainY + gameOverAgainH)
+				{
+					retryFromGameOver();
+				}
+				else if (mx >= gameOverBackX && mx <= gameOverBackX + gameOverBackW &&
+					my >= gameOverBackY && my <= gameOverBackY + gameOverBackH)
+				{
+					currentScreen = 2;
+					jungleDead = false;
+					pinWrong = false;
+					crPlayerDefeated = false;
+				}
+			}
+			else if (waitingRoomStage == 6)
 			{
 				handleJungleClick(mx, my);
 			}
@@ -266,16 +282,13 @@ void iMouse(int button, int state, int mx, int my)
 			{
 				handleWaitingRoomClick(mx, my);
 			}
-
 		}
 	}
 }
 
-
 // Special Keys:
 // GLUT_KEY_F1, GLUT_KEY_F2, GLUT_KEY_F3, GLUT_KEY_F4, GLUT_KEY_F5, GLUT_KEY_F6, GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11, GLUT_KEY_F12, 
 // GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN, GLUT_KEY_PAGE UP, GLUT_KEY_PAGE DOWN, GLUT_KEY_HOME, GLUT_KEY_END, GLUT_KEY_INSERT
-
 void fixedUpdate()
 {
 	// Runs the level 1 game loop while that screen is active
@@ -314,7 +327,7 @@ void fixedUpdate()
 	}
 
 	// Level 3
-	if (currentScreen == 6)
+	if (currentScreen == 6 && !isGameOver())
 	{
 		if (l3IntroActive)
 		{
@@ -363,10 +376,26 @@ void fixedUpdate()
 	{
 		x++;
 	}
+
+	// Debug shortcut: force-show merge.png and put the game into the
+	// "waiting for a click to show pin.png" state, same as the real
+	// click sequence would. Latched so holding 'm' doesn't re-trigger
+	// every frame and wipe out showPinFinal once it's set.
 	if ((isKeyPressed('m') || isKeyPressed('M')) && currentScreen == 6)
 	{
-		showMergeImage = true;
+		if (!mergeDebugKeyLatched)
+		{
+			mergeDebugKeyLatched = true;
+			showMergeImage = true;
+			waitingForMergeClick = false;
+			waitingForPinClick = true;
+		}
 	}
+	else
+	{
+		mergeDebugKeyLatched = false;
+	}
+
 	// Enter advances from the title screen to the loading screen
 	if (isKeyPressed('\r') && menuScreen == 0)
 	{

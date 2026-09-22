@@ -201,6 +201,7 @@ void drawJungleBackground()
 
 	drawJungleProps(true);    // props in front of the boat
 	drawBottles(true);        // bottles that sit "in front of" the boat's current Y
+	drawTrees(jungleWorldX, true);
 }
 
 // frontPass = false draws props behind the boat, true draws props in front of it
@@ -247,6 +248,26 @@ void drawJungleProps(bool frontPass)
 	int prop5Y = boatRestY - 120;
 	if ((prop5Y <= boatY) == frontPass)
 		iShowImage(river1PropScreenX - 80, prop5Y, propWidth + 10, propHeight + 10, propImg[0]);
+
+	int dockPropX = riverEndWorldX - 100;   // change -100 to shift left/right from dock point
+	int dockProp2Y = 300;   // prop2.png position (topmost)
+	int dockProp6Y = 180;   // prop6.png position (middle)
+	int dockProp4Y = 60;    // prop4.png position (bottommost)
+
+	int dockScreenX = dockPropX - jungleWorldX;
+
+	// Only draw when this position is actually visible on screen — so it never shows in jungle1/2/3
+	if (dockScreenX > -propWidth && dockScreenX < 1000)
+	{
+		if ((dockProp2Y <= boatY) == frontPass)
+			iShowImage(dockScreenX - 130, dockProp2Y - 160, propWidth, propHeight, propImg[1]);
+
+		if ((dockProp6Y <= boatY) == frontPass)
+			iShowImage(dockScreenX - 110, dockProp6Y - 2100, propWidth, propHeight, propImg[5]);
+
+		if ((dockProp4Y <= boatY) == frontPass)
+			iShowImage(dockScreenX - 110, dockProp4Y - 80, propWidth, propHeight, propImg[3]);
+	}
 }
 
 void drawJungleRocks()
@@ -392,7 +413,7 @@ void drawMsg4()
 	if (!showMsg4)
 		return;
 
-	iShowImage(340, 200, 320, 230, msg4Img);   // TODO: position/size to match art
+	iShowImage(340, 200, 420, 330, msg4Img);   // TODO: position/size to match art
 }
 
 bool showMImage = false;
@@ -490,7 +511,6 @@ void updateBottles()
 		}
 	}
 }
-
 void updateJungle()
 {
 	if (showMImage)
@@ -582,8 +602,7 @@ void updateJungle()
 	if (!inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT))
 	{
 		jumpingJungle = true;
-		if (playerWorldX + 120 >= riverStartWorldX - 30)
-			boardingBoat = true;
+		// boarding check ekhon land korar somoy hobe (niche jumpingJungle block-e)
 	}
 
 	if (jumpingJungle)
@@ -603,6 +622,12 @@ void updateJungle()
 					if (playerWorldX + 120 > rockWorldX[i] && playerWorldX < rockWorldX[i] + rockWidth)
 						playerWorldX = rockWorldX[i] + rockWidth;
 				}
+
+				// Jump land kore jekhane, shekhane check koro boat-er kache ache kina.
+				// Ei number (boatBoardZone) barale/kamale "koto dure thakleo board hobe" seta control hobe.
+				const int boatBoardZone = 150;
+				if (!reachedRiverEnd && playerWorldX + 120 >= riverStartWorldX - boatBoardZone)
+					boardingBoat = true;
 
 				if (boardingBoat)
 				{
@@ -660,9 +685,23 @@ void updateJungle()
 			}
 		}
 
+		// Boat tree-ke cross korte parbe na, jodi na boat-er Y tree-r collision gap-er baire thake
+		// (mane tree-r onek upor ba niche diye gele block hobe na).
+		bool blockedByTree = false;
+		if (inBoat)
+		{
+			for (int i = 0; i < treeCount; i++)
+			{
+				bool xOverlap = (playerWorldX + boatWidth > treeWorldX[i]) && (playerWorldX < treeWorldX[i] + treeWidth);
+				bool yClose = abs(boatY - treeY[i]) < treeCollisionGapY;
+				if (xOverlap && yClose)
+					blockedByTree = true;
+			}
+		}
+
 		int moveSpeed = jumpingJungle ? 10 : 5;
 
-		if (playerWorldX < worldMax && !blockedByRock)
+		if (playerWorldX < worldMax && !blockedByRock && !blockedByTree)
 			playerWorldX += moveSpeed;
 
 		if ((playerWorldX - jungleWorldX) > jungleMiddleX && jungleWorldX < jungleMaxScroll)

@@ -68,6 +68,8 @@ int crMaskGunAttackImg[2];
 int usbCollectedImg;
 int usbImg;
 int usbSuccessImg;
+int gameOverJungleImg, gameOverRiverImg, gameOverControlImg, backBtnImg, againBtnImg;
+
 
 void loadLevel3Assets()
 {
@@ -246,6 +248,12 @@ void loadLevel3Assets()
 	usbCollectedImg = iLoadImage("Image//usbcollected.png");
 	usbImg = iLoadImage("Image//u.png");
 	usbSuccessImg = iLoadImage("Image//Successful.png");
+
+	gameOverJungleImg = iLoadImage("Image//GameOverJungle.png");
+	gameOverRiverImg = iLoadImage("Image//GameOverRiver.png");
+	gameOverControlImg = iLoadImage("Image//GameOverControl.png");
+	backBtnImg = iLoadImage("Image//back.png");
+	againBtnImg = iLoadImage("Image//again.png");
 }
 
 #endif
