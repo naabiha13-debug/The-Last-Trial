@@ -38,6 +38,7 @@ int boatNormalImg, boatRightUpImg, boatLeftUpImg;
 int boatPlayerImg[4];
 int birdImg[9];
 int backBirdImg[9];
+int crGunAttackImg[2];
 
 // River 4 landing sequence images
 int msg3Img;   // shown right after the player lands on the River 4 bank (was pinmsgImg / pinmsg.png)
@@ -57,6 +58,16 @@ int guardWalkImg[4];
 int guardAttackImg[5];
 int bottleImg;
 int treeImg;
+int crHealthImg[4];   
+int uniformMsgImg;          // "press X to exchange uniform" message
+int crUniformWalkImg[8];    // new player sprite after uniform swap
+int gunMsgImg;   // "press C to collect gun" message
+int crGunWalkImg[6];
+int crMaskWalkImg[5];
+int crMaskGunAttackImg[2];
+int usbCollectedImg;
+int usbImg;
+int usbSuccessImg;
 
 void loadLevel3Assets()
 {
@@ -197,6 +208,44 @@ void loadLevel3Assets()
 		std::string path = "Image//GuardAttack" + std::to_string(i + 1) + ".png";
 		guardAttackImg[i] = iLoadImage((char*)path.c_str());
 	}
+	for (int i = 0; i < 4; i++)
+	{
+		std::string path = "Image//health" + std::to_string(i + 1) + ".png";
+		crHealthImg[i] = iLoadImage((char*)path.c_str());
+	}
+	uniformMsgImg = iLoadImage("Image//uniformmsg.png");
+
+	for (int i = 0; i < 8; i++)
+	{
+		std::string path = "Image//PWalk" + std::to_string(i + 1) + ".png";
+		crUniformWalkImg[i] = iLoadImage((char*)path.c_str());
+	}
+	gunMsgImg = iLoadImage("Image//gunmsg.png");
+	for (int i = 0; i < 6; i++)
+	{
+		std::string path = "Image//GWalk" + std::to_string(i + 1) + ".png";
+		crGunWalkImg[i] = iLoadImage((char*)path.c_str());
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		std::string path = "Image//attackgun" + std::to_string(i + 1) + ".png";
+		crGunAttackImg[i] = iLoadImage((char*)path.c_str());
+	}
+	for (int i = 0; i < 5; i++)
+	{
+		std::string path = "Image//MaskWalk" + std::to_string(i + 1) + ".png";
+		crMaskWalkImg[i] = iLoadImage((char*)path.c_str());
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		std::string path = "Image//MaskGunAttack" + std::to_string(i + 1) + ".png";
+		crMaskGunAttackImg[i] = iLoadImage((char*)path.c_str());
+	}
+
+	usbCollectedImg = iLoadImage("Image//usbcollected.png");
+	usbImg = iLoadImage("Image//u.png");
+	usbSuccessImg = iLoadImage("Image//Successful.png");
 }
 
 #endif

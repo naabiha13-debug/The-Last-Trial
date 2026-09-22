@@ -6,15 +6,15 @@
 
 // ---------------- World / camera ----------------
 const int controlRoomScreenWidth = 1000;
-const int controlRoomTotalWidth = 3 * controlRoomScreenWidth;   
+const int controlRoomTotalWidth = 3 * controlRoomScreenWidth;
 const int controlRoomMaxScroll = controlRoomTotalWidth - controlRoomScreenWidth;
 
 int controlRoomWorldX = 0;
-const int controlRoomMiddleX = 465;   
+const int controlRoomMiddleX = 465;
 
 // ---------------- Player ----------------
 int crPlayerWorldX = 0;
-const int crPlayerScreenY = 190;      
+const int crPlayerScreenY = 190;
 
 bool crFacingRight = true;
 int crWalkFrame = 0;
@@ -26,12 +26,30 @@ const int crPlayerHeight = 80;
 bool crAttacking = false;
 int crAttackFrame = 0;
 int crAttackTimer = 0;
-const int crAttackWidth = 180;   
-const int crAttackHeight = 90;  
+const int crAttackWidth = 180;
+const int crAttackHeight = 90;
 const int crAttackFrameCount = 6;
-const int crAttackFrameDelay = 5;   
-const int crAttackBackOffset = 70;  
+const int crAttackFrameDelay = 5;
+const int crAttackBackOffset = 70;
 
+const int crUniformWidth = 100;    
+const int crUniformHeight = 100;   
+
+const int crGunWalkOffsetX = 0;    
+const int crGunWalkOffsetY = -17;    
+
+const int crGunWalkWidth = 170;   
+const int crGunWalkHeight = 110;
+
+const int crGunAttackWidth = 170;     
+const int crGunAttackHeight = 120;
+const int crGunAttackFrameCount = 2;
+const int crGunAttackFrameDelay = 5;
+
+// gun attack alignment (separate from melee's crAttackBackOffset)
+const int crGunAttackBackOffset = 40;
+const int crGunAttackYOffset = crGunWalkHeight - crGunAttackHeight;   // 130-90 = 40
+const int crGunAttackExtraDropY = 4;  
 // ---------------- Combat ----------------
 const int crCombatRange = 110;
 const int crHitRegisterFrame = 3;
@@ -47,6 +65,27 @@ bool crPlayerDefeated = false;
 
 bool crCombatOver = false;
 
+// ---------------- Health bar UI ----------------
+const int crHealthWidth = 250;
+const int crHealthHeight = 30;
+const int crHealthY = 520;        // top corner
+const int crHealthMargin = 20;
+bool crShowUniformMsg = false;
+bool crUniformEquipped = false;
+
+bool crShowGunMsg = false;
+bool crGunCollected = false;
+const int crGunPickupRange = 80;
+
+bool crShowUsbMsg = false;
+int crUsbMsgTimer = 0;
+const int crUsbMsgDuration = 90;
+
+bool crShowUsbPickupMsg = false;   
+const int crMonitorPickupRange = 80;
+bool crUsbInserted = false;        // U 
+bool crShowUsbSuccess = false;
+
 void drawControlRoomBackground()
 {
 	for (int i = 0; i < 3; i++)
@@ -57,38 +96,65 @@ void drawControlRoomBackground()
 }
 
 void drawControlRoomPlayer()
-{   
+{
 	if (crPlayerDefeated)
-		return;   // invisible
+		return;
 
 	int screenPlayerX = crPlayerWorldX - controlRoomWorldX;
 
-	if (crAttacking)
+	if (crShowUsbMsg)
 	{
-		int attackX = crFacingRight
-			? screenPlayerX - crAttackBackOffset
-			: screenPlayerX + crAttackBackOffset;
-
-		iShowImage(attackX, crPlayerScreenY, crAttackWidth, crAttackHeight, crAttackImg[crAttackFrame]);
+		iShowImage(screenPlayerX + crGunWalkOffsetX, crPlayerScreenY + crGunWalkOffsetY,
+			crGunWalkWidth, crGunWalkHeight, crGunWalkImg[0]);
 		return;
 	}
 
-	if (crFacingRight)
+	if (crAttacking)
+	if (crAttacking)
+	{
+		if (crGunCollected)
+		{
+			int gunAttackX = crFacingRight
+				? screenPlayerX - crGunAttackBackOffset
+				: screenPlayerX + crGunAttackBackOffset;
+
+			int gunAttackY = crPlayerScreenY + crGunWalkOffsetY + crGunAttackYOffset + crGunAttackExtraDropY;
+
+			iShowImage(gunAttackX, gunAttackY, crGunAttackWidth, crGunAttackHeight, crGunAttackImg[crAttackFrame]);
+		}
+		else
+		{
+			int attackX = crFacingRight
+				? screenPlayerX - crAttackBackOffset
+				: screenPlayerX + crAttackBackOffset;
+
+			iShowImage(attackX, crPlayerScreenY, crAttackWidth, crAttackHeight, crAttackImg[crAttackFrame]);
+		}
+		return;
+	}
+
+	if (crGunCollected)
+	{
+		iShowImage(screenPlayerX + crGunWalkOffsetX, crPlayerScreenY + crGunWalkOffsetY,
+			crGunWalkWidth, crGunWalkHeight, crGunWalkImg[crWalkFrame % 6]);
+	}
+	else if (crUniformEquipped)
+	{
+		iShowImage(screenPlayerX, crPlayerScreenY, crUniformWidth, crUniformHeight, crUniformWalkImg[crWalkFrame % 8]);
+	}
+	else if (crFacingRight)
 		iShowImage(screenPlayerX, crPlayerScreenY, crPlayerWidth, crPlayerHeight, l3walkFImg[crWalkFrame]);
 	else
 		iShowImage(screenPlayerX, crPlayerScreenY, crPlayerWidth, crPlayerHeight, l3walkBImg[crWalkFrame]);
 }
 
 
+const int crMonitorWorldX = 2790;
+const int crMonitorY = 242;
+const int crMonitorWidth = 50;
+const int crMonitorHeight = 30;
 
-
-
-const int crMonitorWorldX = 2790;   
-const int crMonitorY = 242;         
-const int crMonitorWidth = 50;    
-const int crMonitorHeight = 30;  
-
-const int crGunWorldX = 1005;   
+const int crGunWorldX = 1005;
 const int crGunY = 190;
 const int crGunWidth = crPlayerWidth;
 const int crGunHeight = crPlayerHeight;
@@ -99,14 +165,14 @@ const int crGuardHeight = 90;
 const int crGuardSpeed = 2;
 
 
-int crGuardWorldX = controlRoomScreenWidth - crGuardWidth; 
+int crGuardWorldX = controlRoomScreenWidth - crGuardWidth;
 const int crGuardWorldY = 190;
 
 int crGuardLeftLimit = 0;
 
 int crGuardWalkFrame = 0;
 int crGuardWalkTimer = 0;
-bool crGuardActive = true;  
+bool crGuardActive = true;
 
 bool crGuardAttacking = false;
 int crGuardAttackFrame = 0;
@@ -116,9 +182,49 @@ const int crGuardAttackFrameDelay = 6;
 const int crGuardAttackWidth = 90;
 const int crGuardAttackHeight = 80;
 
-const int crGuardAttackForwardOffset = 30;   
+const int crGuardAttackForwardOffset = 30;
 
 const int crGuardAttackDistance = 100;
+
+// ---------------- Guard 2 (Mask) ----------------
+const int crMaskGuardWidth = 66;
+const int crMaskGuardHeight = 76;
+const int crMaskGuardSpeed = 2;
+
+// 2nd background worldX range = controlRoomScreenWidth to 2*controlRoomScreenWidth
+// end edge of 2nd bg:
+const int crMaskGuardStartWorldX = 2 * controlRoomScreenWidth - crMaskGuardWidth;
+int crMaskGuardWorldX = crMaskGuardStartWorldX;
+const int crMaskGuardWorldY = 190;
+
+// stop walking once it reaches start of 2nd bg (don't cross into 1st bg)
+int crMaskGuardLeftLimit = controlRoomScreenWidth;
+bool crMaskGuardActive = false;
+int crMaskGuardWalkFrame = 0;
+int crMaskGuardWalkTimer = 0;
+
+bool crMaskGuardDefeated = false;
+
+bool crMaskGuardAttacking = false;
+int crMaskGuardAttackFrame = 0;
+int crMaskGuardAttackTimer = 0;
+const int crMaskGuardAttackFrameCount = 2;      // crMaskGunAttackImg[2] ase, tai 2 frame
+const int crMaskGuardAttackFrameDelay = 6;
+const int crMaskGuardAttackWidth = 90;          // tomar sprite-er actual size onujayi adjust koro
+const int crMaskGuardAttackHeight = 80;
+
+const int crMaskGuardAttackForwardOffset = 30;
+const int crMaskGuardAttackDistance = 240;      // ei distance e ashle attack shuru hobe
+const int crMaskCombatRange = 240;      // mask guard-only, alada rakhlam
+
+// raw hit counters (proti stage e koto hit lagbe)
+int crPlayerRawHitsOnMask = 0;
+int crMaskRawHitsOnPlayer = 0;
+
+const int crHitsPerStage = 5;   // every 5 hits = 1 health stage 
+
+
+
 
 
 void drawControlRoomProps()
@@ -130,10 +236,13 @@ void drawControlRoomProps()
 		iShowImage(screenX, crMonitorY, crMonitorWidth, crMonitorHeight, controlRoomMonitorImg);
 	}
 
-	int gunScreenX = crGunWorldX - controlRoomWorldX;
-	if (gunScreenX > -crGunWidth && gunScreenX < controlRoomScreenWidth)
+	if (!crGunCollected)
 	{
-		iShowImage(gunScreenX, crGunY, crGunWidth, crGunHeight, gunImg);
+		int gunScreenX = crGunWorldX - controlRoomWorldX;
+		if (gunScreenX > -crGunWidth && gunScreenX < controlRoomScreenWidth)
+		{
+			iShowImage(gunScreenX, crGunY, crGunWidth, crGunHeight, gunImg);
+		}
 	}
 }
 
@@ -147,7 +256,7 @@ void drawControlRoomGuard()
 	{
 		if (crGuardAttacking)
 		{
-			
+
 			int attackScreenX = guardScreenX - crGuardAttackForwardOffset;
 
 			iShowImage(attackScreenX, crGuardWorldY, crGuardAttackWidth, crGuardAttackHeight, guardAttackImg[crGuardAttackFrame]);
@@ -159,9 +268,26 @@ void drawControlRoomGuard()
 	}
 }
 
+void drawControlRoomHealthBars()
+{
+	int playerIdx = crGuardHitsOnPlayer;   // player koto mar khaise
+	if (playerIdx > 3) playerIdx = 3;
+
+	int guardIdx = crPlayerHitsOnGuard;    // guard koto mar khaise
+	if (guardIdx > 3) guardIdx = 3;
+
+	// Left corner = player health
+	iShowImage(crHealthMargin, crHealthY, crHealthWidth, crHealthHeight, crHealthImg[playerIdx]);
+
+	// Right corner = guard health
+	iShowImage(controlRoomScreenWidth - crHealthWidth - crHealthMargin, crHealthY, crHealthWidth, crHealthHeight, crHealthImg[guardIdx]);
+}
+
 
 void updateControlRoomGuard()
 {
+	if (!crGuardActive || crGuardDefeated)   // added crGuardDefeated check
+		return;
 	if (!crGuardActive || crCombatOver)
 		return;
 
@@ -201,7 +327,7 @@ void updateControlRoomGuard()
 			if (crGuardAttackFrame >= crGuardAttackFrameCount)
 			{
 				crGuardAttackFrame = 0;
-				crGuardHitRegisteredThisSwing = false; 
+				crGuardHitRegisteredThisSwing = false;
 			}
 		}
 
@@ -233,50 +359,291 @@ void updateControlRoomGuard()
 	}
 }
 
-void updateControlRoom()
+void drawMaskGuard()
 {
-	if (crCombatOver)
+	if (crMaskGuardDefeated || !crGunCollected)
 		return;
 
-	if (isKeyPressed(' ') && !crAttacking)
+	int guardScreenX = crMaskGuardWorldX - controlRoomWorldX;
+
+	if (guardScreenX > -crMaskGuardWidth && guardScreenX < controlRoomScreenWidth)
 	{
-		crAttacking = true;
-		crAttackFrame = 0;
-		crAttackTimer = 0;
-		crPlayerHitRegisteredThisSwing = false;
+		if (crMaskGuardAttacking)
+		{
+			int attackScreenX = guardScreenX - crMaskGuardAttackForwardOffset;
+			iShowImage(attackScreenX, crMaskGuardWorldY, crMaskGuardAttackWidth, crMaskGuardAttackHeight,
+				crMaskGunAttackImg[crMaskGuardAttackFrame]);
+		}
+		else
+		{
+			iShowImage(guardScreenX, crMaskGuardWorldY, crMaskGuardWidth, crMaskGuardHeight,
+				crMaskWalkImg[crMaskGuardWalkFrame % 5]);
+		}
+	}
+}
+void updateMaskGuard()
+{
+	if (!crGunCollected)
+		return;
+
+	if (!crMaskGuardActive && !crMaskGuardDefeated)
+	{
+		crMaskGuardActive = true;
+
+		crPlayerHitsOnGuard = 0;
+		crPlayerRawHitsOnMask = 0;
+		crGuardHitsOnPlayer = 0;      // player health bar-o fresh shuru
+		crMaskRawHitsOnPlayer = 0;
+		crCombatOver = false;
 	}
 
-	if (crAttacking)
+	if (!crMaskGuardActive || crMaskGuardDefeated || crCombatOver)
+		return;
+
+	int distance = abs(crPlayerWorldX - crMaskGuardWorldX);
+
+	if (distance <= crMaskGuardAttackDistance)
 	{
-		crAttackTimer++;
-		if (crAttackTimer >= crAttackFrameDelay)
+		if (!crMaskGuardAttacking)
 		{
-			crAttackTimer = 0;
-			crAttackFrame++;
+			crMaskGuardAttacking = true;
+			crMaskGuardAttackFrame = 0;
+			crMaskGuardAttackTimer = 0;
+			crGuardHitRegisteredThisSwing = false;
+		}
 
-			if (crAttackFrame == crHitRegisterFrame && !crPlayerHitRegisteredThisSwing && !crGuardDefeated)
+		crMaskGuardAttackTimer++;
+		if (crMaskGuardAttackTimer >= crMaskGuardAttackFrameDelay)
+		{
+			crMaskGuardAttackTimer = 0;
+			crMaskGuardAttackFrame++;
+
+			// eituku exactly first guard er moto - ek loop-e ekbar register hobe
+			if (crMaskGuardAttackFrame == 1 && !crGuardHitRegisteredThisSwing && !crPlayerDefeated)
 			{
-				int distance = abs(crPlayerWorldX - crGuardWorldX);
-				if (distance <= crCombatRange)
+				if (distance <= crMaskCombatRange)
 				{
-					crPlayerHitsOnGuard++;
-					crPlayerHitRegisteredThisSwing = true;
+					crMaskRawHitsOnPlayer++;             // raw loop count barlo
+					crGuardHitRegisteredThisSwing = true;
 
-					if (crPlayerHitsOnGuard >= 3)
+					// 5 loop hole tobei 1 health stage kombe
+					if (crMaskRawHitsOnPlayer % crHitsPerStage == 0)
 					{
-						crGuardDefeated = true;
+						crGuardHitsOnPlayer++;
+					}
+
+					if (crGuardHitsOnPlayer >= 4)
+					{
+						crPlayerDefeated = true;
 						crCombatOver = true;
 					}
 				}
 			}
 
-			if (crAttackFrame >= crAttackFrameCount)
+			if (crMaskGuardAttackFrame >= crMaskGuardAttackFrameCount)
 			{
-				crAttacking = false;
-				crAttackFrame = 0;
+				crMaskGuardAttackFrame = 0;
+				crGuardHitRegisteredThisSwing = false;   // notun loop-er jonno reset — pore loop abar count hobe
 			}
 		}
+
 		return;
+	}
+	else
+	{
+		crMaskGuardAttacking = false;
+		crMaskGuardAttackFrame = 0;
+	}
+
+	if (crMaskGuardWorldX > crMaskGuardLeftLimit)
+	{
+		crMaskGuardWorldX -= crMaskGuardSpeed;
+	}
+	else
+	{
+		crMaskGuardWorldX = crMaskGuardLeftLimit;
+		crMaskGuardActive = false;
+	}
+
+	crMaskGuardWalkTimer++;
+	if (crMaskGuardWalkTimer >= 6)
+	{
+		crMaskGuardWalkTimer = 0;
+		crMaskGuardWalkFrame++;
+		if (crMaskGuardWalkFrame >= 5)
+			crMaskGuardWalkFrame = 0;
+	}
+}
+
+void updateControlRoom()
+{
+	if (crGuardDefeated && !crUniformEquipped)
+	{
+		crShowUniformMsg = true;
+		crAttacking = false;
+
+		if (isKeyPressed('x') || isKeyPressed('X'))
+		{
+			crUniformEquipped = true;
+			crShowUniformMsg = false;
+			crWalkFrame = 0;
+			crCombatOver = false;
+			crGuardHitsOnPlayer = 0;
+		}
+	}
+	if (crUniformEquipped && !crGunCollected)
+	{
+		int gunDistance = abs(crPlayerWorldX - crGunWorldX);
+
+		if (gunDistance <= crGunPickupRange)
+		{
+			crShowGunMsg = true;
+			if (isKeyPressed('c') || isKeyPressed('C'))
+			{
+				crGunCollected = true;
+				crShowGunMsg = false;
+				crWalkFrame = 0;
+			}
+		}
+		else
+		{
+			crShowGunMsg = false;
+		}
+	}
+	if (crShowUsbMsg)
+	{
+		crUsbMsgTimer++;
+		if (crUsbMsgTimer >= crUsbMsgDuration)
+		{
+			crShowUsbMsg = false;
+			crCombatOver = false;
+			crAttacking = false;
+			crAttackFrame = 0;
+			crAttackTimer = 0;
+			crPlayerHitRegisteredThisSwing = false;
+		}
+		return;
+	}
+
+	if (crMaskGuardDefeated && !crUsbInserted)
+	{
+		int monitorDistance = abs(crPlayerWorldX - crMonitorWorldX);
+
+		if (monitorDistance <= crMonitorPickupRange)
+		{
+			crShowUsbPickupMsg = true;
+
+			if (isKeyPressed('u') || isKeyPressed('U'))
+			{
+				crUsbInserted = true;
+				crShowUsbPickupMsg = false;
+				crShowUsbSuccess = true;
+			}
+		}
+		else
+		{
+			crShowUsbPickupMsg = false;
+		}
+	}
+
+	if (crCombatOver)
+		return;
+
+
+	bool spaceDown = (isKeyPressed(' ') != 0);
+
+	if (crGunCollected)
+	{
+		// ---- Gun: hold-to-loop attack ----
+		if (spaceDown)
+		{
+			crAttacking = true;
+			crAttackTimer++;
+			if (crAttackTimer >= crGunAttackFrameDelay)
+			{
+				crAttackTimer = 0;
+				crAttackFrame = (crAttackFrame + 1) % crGunAttackFrameCount;
+
+				// notun loop shuru hoiche - previous swing er reset, space chapa thakleo protibar count hobe
+				if (crAttackFrame == 0)
+				{
+					crPlayerHitRegisteredThisSwing = false;
+				}
+			}
+			if (crAttackFrame == 1 && !crPlayerHitRegisteredThisSwing && !crMaskGuardDefeated)
+			{
+				int distance = abs(crPlayerWorldX - crMaskGuardWorldX);
+				if (distance <= crMaskCombatRange)
+				{
+					crPlayerRawHitsOnMask++;
+					crPlayerHitRegisteredThisSwing = true;
+
+					if (crPlayerRawHitsOnMask % crHitsPerStage == 0)
+					{
+						crPlayerHitsOnGuard++;
+					}
+
+					if (crPlayerHitsOnGuard >= 4)
+					{
+						crMaskGuardDefeated = true;
+						crCombatOver = true;
+						crShowUsbMsg = true;
+						crUsbMsgTimer = 0;
+					}
+				}
+			}
+			return;
+		}
+		else
+		{
+			crAttacking = false;
+			crAttackFrame = 0;
+			crAttackTimer = 0;
+			crPlayerHitRegisteredThisSwing = false;
+		}
+	}
+	else
+	{
+
+		if (spaceDown && !crAttacking)
+		{
+			crAttacking = true;
+			crAttackFrame = 0;
+			crAttackTimer = 0;
+			crPlayerHitRegisteredThisSwing = false;
+		}
+
+		if (crAttacking)
+		{
+			crAttackTimer++;
+			if (crAttackTimer >= crAttackFrameDelay)
+			{
+				crAttackTimer = 0;
+				crAttackFrame++;
+
+				if (crAttackFrame == crHitRegisterFrame && !crPlayerHitRegisteredThisSwing && !crGuardDefeated)
+				{
+					int distance = abs(crPlayerWorldX - crGuardWorldX);
+					if (distance <= crCombatRange)
+					{
+						crPlayerHitsOnGuard++;
+						crPlayerHitRegisteredThisSwing = true;
+						if (crPlayerHitsOnGuard >= 3)
+						{
+							crGuardDefeated = true;
+							crCombatOver = true;
+						}
+					}
+				}
+
+				if (crAttackFrame >= crAttackFrameCount)
+				{
+					crAttacking = false;
+					crAttackFrame = 0;
+				}
+			}
+			return;
+		}
 	}
 
 
@@ -326,20 +693,43 @@ void updateControlRoom()
 		crWalkFrame = 0;
 	}
 
-	updateControlRoomGuard();   
+	updateControlRoomGuard();
+	updateMaskGuard();
 }
+
+	
+	
+
+	
 void drawControlRoom()
 {
+if (crShowUsbSuccess)
+{
+	iShowImage(0, 0, controlRoomScreenWidth, 600, usbSuccessImg);
+	return;
+}
+
 	drawControlRoomBackground();
 	drawControlRoomProps();
 	drawControlRoomGuard();
+	drawMaskGuard();
 	drawControlRoomPlayer();
+	drawControlRoomHealthBars();
+	if (crShowUniformMsg)
+		iShowImage(360, 300, 250, 50, uniformMsgImg);
+
+	if (crShowGunMsg)
+		iShowImage(360, 300, 250, 50, gunMsgImg);
+	if (crShowUsbMsg)                                     
+		iShowImage(360, 300, 250, 50, usbCollectedImg);
+	if (crShowUsbPickupMsg)
+		iShowImage(360, 300, 250, 50, usbImg);
 }
 
 
 void handleControlRoomClick(int mx, int my)
 {
-	
+
 }
 
 #endif

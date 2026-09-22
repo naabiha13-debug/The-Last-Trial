@@ -406,8 +406,6 @@ void fixedUpdate()
 int main()
 {
 	loadAudio();
-
-
 	iInitialize(1000, 600, "The Last Trial");
 	initMenu();
 	iSetTimer(15, updateCharacterAnimation);
