@@ -14,7 +14,7 @@ int cueH = 43;
 
 // 0=idle, 1=msg1(over head), 2=msg2(fullscreen), 3=waiting for 'I',
 // 4=take1->2->3 sequence, 5=warning1->2 sequence, 6=done
-int waitingRoomStage = 0;
+int waitingRoomStage = 6;
 
 int wrTimer = 0;
 int takeFrame = 0;
@@ -220,7 +220,8 @@ void drawDoorTransition()
 void drawWaitingRoomStage()
 {   
 	drawLamps();
-	if (waitingRoomStage < 4) iShowImage(cueX, cueY, cueW, cueH, cueImg);
+	if (waitingRoomStage < 4 || (waitingRoomStage == 4 && takeFrame < 2))
+		iShowImage(cueX, cueY, cueW, cueH, cueImg);
 
 	if (waitingRoomStage == 1)
 		iShowImage(l3PlayerX-155, l3PlayerY-20, 250, 400, msg1Img);

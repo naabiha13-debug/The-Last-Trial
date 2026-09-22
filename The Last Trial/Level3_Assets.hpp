@@ -28,20 +28,25 @@ int jungleBgImg[3];
 int dollImg[5];
 int dontMoveImg;
 int paperImg;
-int prop1Img;
+int propImg[6];
 int riverBgImg[4];
 int waveImg[3];
 const int jumpFrameCount = 8;
 int jumpImg[jumpFrameCount];
 int rockImg;
-int prop2Img;
 int boatNormalImg, boatRightUpImg, boatLeftUpImg;
 int boatPlayerImg[4];
 int birdImg[9];
 int backBirdImg[9];
-int pinmsgImg;
+
+// River 4 landing sequence images
+int msg3Img;   // shown right after the player lands on the River 4 bank (was pinmsgImg / pinmsg.png)
+int msg4Img;   // shown after the player clicks the control room door
+int pinImg;    // final pin image, shown at the end of the click sequence
+
 int mImg;
 int mergeImg;
+int treePropImg[2];
 
 
 void loadLevel3Assets()
@@ -102,8 +107,17 @@ void loadLevel3Assets()
 
 	dontMoveImg = iLoadImage("Image//dontmove.png");
 	paperImg = iLoadImage("Image//paper.png");
-	prop1Img = iLoadImage("Image//prop1.png");
+	for (int i = 0; i < 6; i++)
+	{
+		std::string propPath = "Image//prop" + std::to_string(i + 1) + ".png";
+		propImg[i] = iLoadImage((char*)propPath.c_str());
+	}
 
+	for (int i = 0; i < 2; i++)
+	{
+		std::string treePropPath = "Image//treeprop" + std::to_string(i + 1) + ".png";
+		treePropImg[i] = iLoadImage((char*)treePropPath.c_str());
+	}
 	for (int i = 0; i < 3; i++)
 	{
 		std::string wavePath = "Image//wave_strip_" + std::to_string(i + 1) + ".png";
@@ -133,7 +147,12 @@ void loadLevel3Assets()
 		birdImg[i] = iLoadImage((char*)("Image//bird" + std::to_string(i + 1) + ".png").c_str());
 		backBirdImg[i] = iLoadImage((char*)("Image//bb" + std::to_string(i + 1) + ".png").c_str());
 	}
-	pinmsgImg = iLoadImage("Image//pinmsg.png");
+
+	// River 4 landing sequence
+	msg3Img = iLoadImage("Image//msg3.png");
+	msg4Img = iLoadImage("Image//msg4.png");
+	pinImg = iLoadImage("Image//pin.png");
+
 	mImg = iLoadImage("Image//m.png");
 	mergeImg = iLoadImage("Image//merge.png");
 }

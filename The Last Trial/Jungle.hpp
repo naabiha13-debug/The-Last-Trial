@@ -33,12 +33,39 @@ const int dollMaxCycles = 3;
 
 int playerWorldX = 100;
 const int jungleMiddleX = 465;
+
+// Normal walking Y. On River 4's bank this is raised to river4BankPlayerY.
 int jungleScreenPlayerY = 110;
+
+// Y used only after landing on the River 4 bank, since that art sits higher than the rest.
+const int river4BankPlayerY = 150;   // TODO: adjust to match the art
+
+// Y position the boat sits at once it has docked at the river's end.
+const int boatDockedY = 100;
+
 bool jungleDead = false;
-bool exitingBoat = false;      // True while the jump-off-the-boat animation is playing
+bool exitingBoat = false;      // true while the jump-off-the-boat animation is playing
 bool reachedRiverEnd = false;
-bool showPinMessage = false;
 // NOTE: inBoat and boardingBoat are declared in river.hpp — NOT redeclared here
+
+// ---------------- River 4 landing / control room sequence ----------------
+bool showMsg3 = false;
+bool showMsg4 = false;
+
+bool waitingForMergeClick = false;
+bool waitingForPinClick = false;
+bool showPinFinal = false;
+
+// Defined in the pin keypad file, included after this one.
+void handlePinKeypadClick(int mx, int my);
+void drawPinDisplay();
+
+// Screen box for the control room door.
+// TODO: fine-tune these four numbers by testing in-game.
+const int controlRoomBtnX = 850;
+const int controlRoomBtnY = 198;
+const int controlRoomBtnW = 140;
+const int controlRoomBtnH = 168;
 
 // Papers to collect
 int paperWorldX[3] = { 650, 1650, 2750 };
@@ -66,11 +93,12 @@ void initJungleRocks()
 	}
 }
 
+void drawJungleProps(bool frontPass);   // defined below
+
 // Jump animation state
 bool jumpingJungle = false;
 int jungleJumpFrame = 0;
 int jungleJumpTimer = 0;
-
 const int jumpMaxHeight = 140;
 
 void drawJungleBackground()
@@ -89,19 +117,60 @@ void drawJungleBackground()
 	drawRiverWaves(jungleWorldX, 3);
 	drawUpperWaveRow(jungleWorldX, 3);
 
-	int boatWorldX = inBoat ? playerWorldX : (reachedRiverEnd ? (riverEndWorldX - boatWidth) : riverStartWorldX);
-	bool boatMoving = inBoat && isSpecialKeyPressed(GLUT_KEY_RIGHT);
-	drawBoat(jungleWorldX, boatWorldX, boatMoving, inBoat);
+	drawJungleProps(false);   // props behind the boat
+
+	bool boatVisible = inBoat || reachedRiverEnd || boardingBoat;
+	if (boatVisible)
+	{
+		int boatWorldX = inBoat ? playerWorldX : (reachedRiverEnd ? (riverEndWorldX - boatWidth) : riverStartWorldX);
+		bool boatMoving = inBoat && isSpecialKeyPressed(GLUT_KEY_RIGHT);
+		bool showBoatPlayer = inBoat || boardingBoat;   // show player on the boat while boarding too
+		drawBoat(jungleWorldX, boatWorldX, boatMoving, showBoatPlayer);
+	}
+
+	drawJungleProps(true);    // props in front of the boat
 }
 
-void drawJungleProps()
+// frontPass = false draws props behind the boat, true draws props in front of it
+void drawJungleProps(bool frontPass)
 {
 	int propWidth = 210;
 	int propHeight = 210;
 	int boundaryWorldX = jungleScreenWidth;
 
 	int propScreenX = boundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
-	iShowImage(propScreenX, 147, propWidth, propHeight, prop1Img);
+	int propY = 147;
+	if ((propY <= boatY) == frontPass)
+		iShowImage(propScreenX, propY, propWidth, propHeight, propImg[0]);
+
+	int treePropY = 147 + 300;
+	if ((treePropY <= boatY) == frontPass)
+		iShowImage(propScreenX, treePropY, propWidth, propHeight, treePropImg[0]);
+
+	int riverBoundaryWorldX = 3 * jungleScreenWidth;
+	int riverPropScreenX = riverBoundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
+	if ((treePropY <= boatY) == frontPass)
+		iShowImage(riverPropScreenX - 20, treePropY, propWidth, propHeight, treePropImg[0]);
+
+	int prop3Y = treePropY - propHeight - 120;
+	if ((prop3Y <= boatY) == frontPass)
+		iShowImage(riverPropScreenX, prop3Y, propWidth, propHeight - 10, propImg[2]);
+
+	int river1PropWorldX = riverBoundaryWorldX + 300;
+	int river1PropScreenX = river1PropWorldX - jungleWorldX;
+
+	int prop4Y = boatY + 70;
+	if ((prop4Y <= boatY) == frontPass)
+		iShowImage(river1PropScreenX - 75, prop4Y, propWidth, propHeight - 20, propImg[3]);
+
+	int river3to4BoundaryWorldX = 6 * jungleScreenWidth;
+	int river3to4PropScreenX = river3to4BoundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
+	if ((152 <= boatY) == frontPass)
+		iShowImage(river3to4PropScreenX - 20, 152, propWidth + 10, propHeight, propImg[1]);
+
+	int prop5Y = boatY - 120;
+	if ((prop5Y <= boatY) == frontPass)
+		iShowImage(river1PropScreenX - 80, prop5Y, propWidth + 10, propHeight + 10, propImg[0]);
 }
 
 void drawJungleRocks()
@@ -128,14 +197,10 @@ void drawJunglePlayer()
 	int screenPlayerX = playerWorldX - jungleWorldX;
 
 	if (jungleDead)
-	{
 		return;
-	}
 
-	if (inBoat)
-	{
+	if (inBoat || boardingBoat)   // boat already shows the player while boarding
 		return;
-	}
 
 	if (pickingUpPaper)
 	{
@@ -222,10 +287,9 @@ void drawJunglePapers()
 	}
 }
 
-// Draws the pin message image above the player's head after landing from the boat
-void drawPinMessage()
+void drawMsg3()
 {
-	if (!showPinMessage)
+	if (!showMsg3)
 		return;
 
 	int screenPlayerX = playerWorldX - jungleWorldX;
@@ -235,19 +299,28 @@ void drawPinMessage()
 	int msgX = screenPlayerX + (120 - msgWidth) / 2;
 	int msgY = jungleScreenPlayerY + 100;
 
-	iShowImage(msgX, msgY, msgWidth, msgHeight, pinmsgImg);
+	iShowImage(msgX, msgY, msgWidth, msgHeight, msg3Img);
 }
+
+void drawMsg4()
+{
+	if (!showMsg4)
+		return;
+
+	iShowImage(340, 200, 320, 230, msg4Img);   // TODO: position/size to match art
+}
+
 bool showMImage = false;
 int mImageTimer = 0;
-const int mImageDuration = 120;   
-
+const int mImageDuration = 120;
 bool showMergeImage = false;
+
 void drawMImage()
 {
 	if (!showMImage)
 		return;
 
-	iShowImage(400, 350, 450, 20, mImg);   // position/size adjust
+	iShowImage(400, 350, 450, 20, mImg);
 }
 
 void drawMergeImage()
@@ -255,8 +328,63 @@ void drawMergeImage()
 	if (!showMergeImage)
 		return;
 
-	iShowImage(0, 0, 1000, 600, mergeImg);   // position/size adjust 
+	iShowImage(0, 0, 1000, 600, mergeImg);
 }
+
+void drawPinFinal()
+{
+	if (!showPinFinal)
+		return;
+
+	iShowImage(0, 0, 1000, 600, pinImg);
+}
+
+void handleJungleClick(int mx, int my)
+{
+	if (showPinFinal)
+	{
+		handlePinKeypadClick(mx, my);
+		return;
+	}
+
+	if (showMsg3)
+	{
+		bool insideControlRoom =
+			mx >= controlRoomBtnX && mx <= controlRoomBtnX + controlRoomBtnW &&
+			my >= controlRoomBtnY && my <= controlRoomBtnY + controlRoomBtnH;
+
+		if (insideControlRoom)
+		{
+			showMsg3 = false;
+			showMsg4 = true;
+		}
+		return;
+	}
+
+	if (showMsg4)
+	{
+		showMsg4 = false;
+		showMImage = true;
+		mImageTimer = 0;
+		return;
+	}
+
+	if (waitingForMergeClick)
+	{
+		waitingForMergeClick = false;
+		showMergeImage = true;
+		waitingForPinClick = true;
+		return;
+	}
+
+	if (waitingForPinClick)
+	{
+		waitingForPinClick = false;
+		showMergeImage = false;
+		showPinFinal = true;
+	}
+}
+
 void updateJungle()
 {
 	if (showMImage)
@@ -266,15 +394,15 @@ void updateJungle()
 		{
 			showMImage = false;
 			mImageTimer = 0;
+			waitingForMergeClick = true;
 		}
 	}
+
 	if (jungleDead)
 		return;
 
 	updateRiverWaves();
 	updateBirds();
-
-	// NOTE: auto-boarding line removed — inBoat is now only set when the boarding jump finishes
 
 	if (inBoat)
 	{
@@ -287,7 +415,6 @@ void updateJungle()
 		if (boatY > boatMaxY) boatY = boatMaxY;
 	}
 
-	// Boat reached river's end — jump off only when player presses UP+RIGHT
 	if (inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT)
 		&& playerWorldX >= (riverEndWorldX - boatWidth))
 	{
@@ -295,6 +422,7 @@ void updateJungle()
 		exitingBoat = true;
 		inBoat = false;
 		reachedRiverEnd = true;
+		boatY = boatDockedY;
 	}
 
 	if (pickingUpPaper)
@@ -366,15 +494,16 @@ void updateJungle()
 				if (exitingBoat)
 				{
 					exitingBoat = false;
-					playerWorldX = riverEndWorldX;   // Land just past where the boat docked
+					playerWorldX = riverEndWorldX;
 					jungleFacingRight = true;
-					showPinMessage = true;
+
+					jungleScreenPlayerY = river4BankPlayerY;
+					showMsg3 = true;
 				}
 			}
 		}
 	}
 
-	// Moving while a doll is watching kills the player (only in the jungle part, before the river)
 	bool isMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT);
 
 	if (isMoving && !inBoat && !reachedRiverEnd && playerWorldX < jungleScreenWidth * 3)
@@ -462,11 +591,8 @@ void updateJungle()
 
 void drawDontMoveSign()
 {
-	
-		if (reachedRiverEnd || playerWorldX >= jungleScreenWidth * 3)
-			return;
-	
-	
+	if (reachedRiverEnd || playerWorldX >= jungleScreenWidth * 3)
+		return;
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -482,7 +608,6 @@ const int totalControlRoomDistance = 600;
 
 void drawDistanceCounter()
 {
-	// Progress from 0.0 (start of jungle) to 1.0 (player has landed at the river's end)
 	float progress = (float)playerWorldX / (float)riverEndWorldX;
 	if (progress < 0.0f) progress = 0.0f;
 	if (progress > 1.0f) progress = 1.0f;

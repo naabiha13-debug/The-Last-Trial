@@ -17,7 +17,7 @@ const int waveTileHeight = 65;
 const int waveRowStep = 45;
 const int waveRows = 4;
 
-const int waveStartX = 180;
+const int waveStartX = 325;
 const int waveEndX = 570;
 
 const int waveRowExtraShift = 50;
@@ -151,7 +151,7 @@ void drawBoat(int worldX, int boatWorldX, bool moving, bool showPlayer)
 			img = boatLeftUpImg;
 	}
 
-	iShowImage(boatWorldX - worldX, boatY, boatWidth, boatHeight, img);
+	iShowImage(boatWorldX - worldX-35, boatY, boatWidth, boatHeight, img);
 
 	if (showPlayer)
 	{

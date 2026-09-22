@@ -86,6 +86,7 @@
     <ClInclude Include="ControlRoom.hpp" />
     <ClInclude Include="glaux.h" />
     <ClInclude Include="glut.h" />
+    <ClInclude Include="Pinkeypad addition.hpp" />
     <ClInclude Include="river.hpp" />
     <ClInclude Include="Jungle.hpp" />
     <ClInclude Include="Level3.hpp" />

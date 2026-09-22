@@ -7,18 +7,22 @@
 #include "WaitingRoom.hpp"
 #include "Jungle.hpp"
 #include "river.hpp"
+#include "Pinkeypad addition.hpp"
 
 void drawLevel3()
 {
 	if (waitingRoomStage == 6)
 	{
 		drawJungleBackground();
-		drawJungleProps();
+		
 		drawJungleRocks();
 		drawJungleDolls();
 		drawJunglePapers();
 		drawJunglePlayer();
-		drawPinMessage();
+		drawMsg3();
+		drawMsg4();
+		drawPinFinal();
+		drawPinDisplay();
 		drawMImage();
 		drawMergeImage();
 		drawDontMoveSign();

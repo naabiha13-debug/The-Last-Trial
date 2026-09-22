@@ -258,17 +258,15 @@ void iMouse(int button, int state, int mx, int my)
 		}
 		else if (currentScreen == 6)
 		{
-			if (showPinMessage)
+			if (waitingRoomStage == 6)
 			{
-				showPinMessage = false;
-
-				showMImage = true;    
-				mImageTimer = 0;
+				handleJungleClick(mx, my);
 			}
 			else
 			{
 				handleWaitingRoomClick(mx, my);
 			}
+		
 		}
 	}
 }
