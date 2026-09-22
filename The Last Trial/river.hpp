@@ -20,13 +20,11 @@ const int waveRows = 4;
 const int waveStartX = 180;
 const int waveEndX = 570;
 
-// Extra rightward shift for the alternating (2nd/4th) rows
 const int waveRowExtraShift = 50;
 
-// Smaller upper wave row - only drawn over River1 and River2
-const int upperWaveTileWidth = 130;   // ~50% of waveTileWidth
-const int upperWaveTileHeight = 33;   // ~50% of waveTileHeight
-const int upperWaveY = 190;           // Sits above the main wave rows
+const int upperWaveTileWidth = 130;
+const int upperWaveTileHeight = 33;
+const int upperWaveY = 190;
 
 // ---------------- Boat ----------------
 
@@ -38,19 +36,22 @@ const int boatMaxY = 180;
 const int waveDownFrame = 0;
 
 int boatY = 100;
+bool inBoat = false;
+bool boardingBoat = false;
 
-// Player-in-boat animation (frames 0..3, cycles while moving)
 int boatPlayerFrame = 0;
 int boatPlayerAnimTimer = 0;
-const int boatPlayerWidth = 200;
-const int boatPlayerHeight = 120;
+const int boatPlayerWidth = 120;
+const int boatPlayerHeight = 170;
+int boatPlayerOffsetX = 20;
+int boatPlayerOffsetY = 0;
 
 void updateBoatPlayerAnimation(bool moving)
 {
 	if (moving)
 	{
 		boatPlayerAnimTimer++;
-		if (boatPlayerAnimTimer >= 5)
+		if (boatPlayerAnimTimer >= 60)
 		{
 			boatPlayerAnimTimer = 0;
 			boatPlayerFrame++;
@@ -66,9 +67,13 @@ void updateBoatPlayerAnimation(bool moving)
 }
 
 const int birdCount = 5;
-float birdX[birdCount], birdTurnX[birdCount];
+float birdX[birdCount];
+float birdSpeed[birdCount];
 int birdY[birdCount], birdFrame[birdCount], birdTimer[birdCount];
 bool birdBack[birdCount], birdInit = false;
+
+int birdDir[birdCount];
+int birdZoneStart = 0, birdZoneEnd = 0;
 
 void updateRiverWaves()
 {
@@ -91,7 +96,6 @@ void drawRiverBackground(int worldX, int jungleScreenCount)
 	}
 }
 
-// Draws continuous waves over the whole river, from the bottom of the screen upward
 void drawRiverWaves(int worldX, int jungleScreenCount)
 {
 	int zoneStart = jungleScreenCount * riverScreenWidth + waveStartX;
@@ -116,11 +120,10 @@ void drawRiverWaves(int worldX, int jungleScreenCount)
 	}
 }
 
-// Draws a smaller extra wave row, only over River1 and River2
 void drawUpperWaveRow(int worldX, int jungleScreenCount)
 {
-	int zoneStart = jungleScreenCount * riverScreenWidth + waveStartX; // Start where the water actually begins
-	int zoneEnd = jungleScreenCount * riverScreenWidth + (3 * riverScreenWidth); // Extended through River3
+	int zoneStart = jungleScreenCount * riverScreenWidth + waveStartX;
+	int zoneEnd = jungleScreenCount * riverScreenWidth + (3 * riverScreenWidth);
 	int col = 0;
 
 	for (int wx = zoneStart; wx + upperWaveTileWidth <= zoneEnd; wx += upperWaveTileWidth)
@@ -136,7 +139,6 @@ void drawUpperWaveRow(int worldX, int jungleScreenCount)
 	}
 }
 
-// Draws the boat, and the player sprite on top only once the player has boarded
 void drawBoat(int worldX, int boatWorldX, bool moving, bool showPlayer)
 {
 	int img = boatNormalImg;
@@ -154,7 +156,9 @@ void drawBoat(int worldX, int boatWorldX, bool moving, bool showPlayer)
 	if (showPlayer)
 	{
 		updateBoatPlayerAnimation(moving);
-		iShowImage(boatWorldX - worldX, boatY, boatPlayerWidth, boatPlayerHeight, boatPlayerImg[boatPlayerFrame]);
+		int playerScreenX = boatWorldX - worldX + boatPlayerOffsetX;
+		int playerScreenY = boatY + boatPlayerOffsetY;
+		iShowImage(playerScreenX, playerScreenY, boatPlayerWidth, boatPlayerHeight, boatPlayerImg[boatPlayerFrame]);
 	}
 }
 
@@ -163,17 +167,17 @@ void initBirds(int jungleScreenCount)
 	if (birdInit) return;
 	birdInit = true;
 
-	int startMin = jungleScreenCount * riverScreenWidth + 40;
-	int startMax = startMin + riverScreenWidth - 100;
-	int turnMax = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2 + 50;
+	birdZoneStart = jungleScreenCount * riverScreenWidth + 40;
+	birdZoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2 + 50;
 
 	for (int i = 0; i < birdCount; i++)
 	{
-		birdX[i] = startMin + rand() % (startMax - startMin);
-		birdY[i] = 420 + rand() % 101;
-		birdTurnX[i] = startMin + 150 + rand() % (turnMax - startMin - 150);
+		birdDir[i] = (i % 2 == 0) ? 1 : -1;
+		birdX[i] = (float)(birdZoneStart + rand() % (birdZoneEnd - birdZoneStart));
+		birdY[i] = 380 + rand() % 150;
 		birdFrame[i] = rand() % 9;
-		birdBack[i] = false;
+		birdBack[i] = (birdDir[i] == -1);
+		birdSpeed[i] = 1.0f + (rand() % 100) / 100.0f;
 	}
 }
 
@@ -181,14 +185,19 @@ void updateBirds()
 {
 	for (int i = 0; i < birdCount; i++)
 	{
-		if (!birdBack[i])
+		birdX[i] += birdDir[i] * birdSpeed[i];
+
+		if (birdDir[i] == 1 && birdX[i] > birdZoneEnd)
 		{
-			birdX[i] += 1.5f;
-			if (birdX[i] >= birdTurnX[i]) birdBack[i] = true;
+			birdX[i] = (float)birdZoneEnd;
+			birdDir[i] = -1;
+			birdBack[i] = true;
 		}
-		else
+		else if (birdDir[i] == -1 && birdX[i] < birdZoneStart)
 		{
-			birdX[i] -= 1.5f;
+			birdX[i] = (float)birdZoneStart;
+			birdDir[i] = 1;
+			birdBack[i] = false;
 		}
 
 		if (++birdTimer[i] >= 6)
@@ -209,7 +218,5 @@ void drawBirds(int worldX, int jungleScreenCount)
 			iShowImage(sx, birdY[i], 60, 45, birdBack[i] ? backBirdImg[birdFrame[i]] : birdImg[birdFrame[i]]);
 	}
 }
-
-
 
 #endif

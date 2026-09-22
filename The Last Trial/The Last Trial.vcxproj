@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClInclude Include="Audio.hpp" />
     <ClInclude Include="bitmap_loader.h" />
+    <ClInclude Include="ControlRoom.hpp" />
     <ClInclude Include="glaux.h" />
     <ClInclude Include="glut.h" />
     <ClInclude Include="river.hpp" />

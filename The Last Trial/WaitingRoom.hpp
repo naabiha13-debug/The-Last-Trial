@@ -22,8 +22,8 @@ int warningFrame = 0;
 bool iKeyWasPressed = false;
 // ---------- Level 3 intro slides ----------
 const int L3_INTRO_COUNT = 3;
-const int L3_FADE_FRAMES = 40;   // fade-in koto frame ধরে hobe
-const int L3_HOLD_FRAMES = 90;   // fade-in er por slide koto frame thakbe
+const int L3_FADE_FRAMES = 40;  
+const int L3_HOLD_FRAMES = 90;   
 
 bool l3IntroActive = false;
 int l3IntroSlide = 0;
@@ -31,7 +31,7 @@ int l3IntroTimer = 0;
 
 bool showExploreMsg = false;
 int exploreMsgTimer = 0;
-const int EXPLORE_MSG_DURATION = 90;   // koto frame dekhabe, cage moto adjust koro
+const int EXPLORE_MSG_DURATION = 90; 
 
 int exploreMsgX = 350;
 int exploreMsgY = 300;
@@ -56,7 +56,7 @@ void updateL3Intro()
 		l3IntroSlide++;
 		if (l3IntroSlide >= L3_INTRO_COUNT)
 		{
-			l3IntroActive = false;   // slide shesh, ekhon waiting room
+			l3IntroActive = false;  
 
 			showExploreMsg = true;
 			exploreMsgTimer = 0;
@@ -71,12 +71,12 @@ void drawL3Intro()
 
 	iShowImage(0, 0, 1000, 600, l3IntroImg[l3IntroSlide]);
 
-	// fade-in: kalo overlay dhire dhire transparent hoy
+	// fade-in
 	if (l3IntroTimer < L3_FADE_FRAMES)
 	{
 		float alpha = 1.0f - (float)l3IntroTimer / L3_FADE_FRAMES;
 
-		glDisable(GL_TEXTURE_2D);   // slide image er texture jate overlay er upor na pore
+		glDisable(GL_TEXTURE_2D);   
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glColor4f(0.0f, 0.0f, 0.0f, alpha);
@@ -129,7 +129,7 @@ int vaseH = 37;
 bool keyCollected = false;
 bool keyMsgShow = false;
 
-// "Key collected" image koto boro, kothay dekhabe
+// "Key collected" 
 int keyMsgX = 320;
 int keyMsgY = 300;
 int keyMsgW = 300;
@@ -182,7 +182,7 @@ void updateDoorTransition()
 	}
 	else if (doorState == 2 && doorTimer >= DOOR_FADE_FRAMES)
 	{
-		waitingRoomStage = 6;   // jungle e switch (screen ekhon shompurno kalo)
+		waitingRoomStage = 6;   // jungle switch 
 		doorState = 3;
 		doorTimer = 0;
 	}
@@ -272,13 +272,13 @@ void updateWaitingRoomStage()
 		takeFrame = 0;
 		wrTimer = 0;
 	}
-	iKeyWasPressed = iPressed;   // proti frame e update hobe
+	iKeyWasPressed = iPressed;  
 }
 
 void handleWaitingRoomClick(int mx, int my)
 {
-	if (l3IntroActive) return;     // intro slide cholche
-	if (doorState != 0) return;    // door transition cholche
+	if (l3IntroActive) return;     // intro slide 
+	if (doorState != 0) return;    // door transition 
 
 	// Stage 5: warning "Next" button
 	if (waitingRoomStage == 5)
@@ -291,12 +291,12 @@ void handleWaitingRoomClick(int mx, int my)
 		{
 			warningFrame++;
 			if (warningFrame > 1)
-				waitingRoomStage = 7;   // waiting room free roam (jungle na)
+				waitingRoomStage = 7;   // waiting room free roam 
 		}
 		return;
 	}
 
-	// "Key collected" image dekhano thakle, click e bondho
+	// 
 	if (keyMsgShow)
 	{
 		keyMsgShow = false;

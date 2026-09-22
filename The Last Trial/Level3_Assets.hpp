@@ -39,6 +39,9 @@ int boatNormalImg, boatRightUpImg, boatLeftUpImg;
 int boatPlayerImg[4];
 int birdImg[9];
 int backBirdImg[9];
+int pinmsgImg;
+int mImg;
+int mergeImg;
 
 
 void loadLevel3Assets()
@@ -130,6 +133,9 @@ void loadLevel3Assets()
 		birdImg[i] = iLoadImage((char*)("Image//bird" + std::to_string(i + 1) + ".png").c_str());
 		backBirdImg[i] = iLoadImage((char*)("Image//bb" + std::to_string(i + 1) + ".png").c_str());
 	}
+	pinmsgImg = iLoadImage("Image//pinmsg.png");
+	mImg = iLoadImage("Image//m.png");
+	mergeImg = iLoadImage("Image//merge.png");
 }
 
 #endif

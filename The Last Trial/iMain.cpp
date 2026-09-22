@@ -108,14 +108,14 @@ void iPassiveMouseMove(int mx, int my)
 			hoverLevel = 0;
 		}
 
-	
+
 	}
 	else
 	{
 		hoverButton = 0;
 		hoverLevel = 0;
 	}
-	
+
 }
 
 
@@ -160,11 +160,11 @@ void iMouse(int button, int state, int mx, int my)
 				// Level 2
 				currentScreen = 5;
 				loadLevel2Assets();
-		
+
 				level2ShowingRules = true;
-				
+
 				stopMenuMusic();
-				
+
 			}
 			else if (mx >= 365 && mx <= 635 &&
 				my >= 160 && my <= 240)
@@ -184,7 +184,7 @@ void iMouse(int button, int state, int mx, int my)
 				// BACK
 				currentScreen = 0;
 			}
-		
+
 		}
 		else if (currentScreen == 3)
 		{
@@ -214,7 +214,7 @@ void iMouse(int button, int state, int mx, int my)
 					storyPage = 3;
 				}
 			}
-			else if (storyPage == 3)   
+			else if (storyPage == 3)
 			{   //back
 				if (mx >= 60 && mx <= 200 &&
 					my >= 500 && my <= 550)
@@ -258,7 +258,17 @@ void iMouse(int button, int state, int mx, int my)
 		}
 		else if (currentScreen == 6)
 		{
-			handleWaitingRoomClick(mx, my);
+			if (showPinMessage)
+			{
+				showPinMessage = false;
+
+				showMImage = true;    
+				mImageTimer = 0;
+			}
+			else
+			{
+				handleWaitingRoomClick(mx, my);
+			}
 		}
 	}
 }
@@ -326,8 +336,8 @@ void fixedUpdate()
 			updateWaitingRoomStage();
 		}
 	}
-	
-	
+
+
 	// Free-roam WASD/arrow controls (used outside level 1)
 	if (isKeyPressed('w') || isSpecialKeyPressed(GLUT_KEY_UP))
 	{
@@ -348,7 +358,10 @@ void fixedUpdate()
 	{
 		x++;
 	}
-
+	if ((isKeyPressed('m') || isKeyPressed('M')) && currentScreen == 6)
+	{
+		showMergeImage = true;
+	}
 	// Enter advances from the title screen to the loading screen
 	if (isKeyPressed('\r') && menuScreen == 0)
 	{
@@ -388,7 +401,7 @@ void fixedUpdate()
 int main()
 {
 	loadAudio();
-	
+
 
 	iInitialize(1000, 600, "The Last Trial");
 	initMenu();

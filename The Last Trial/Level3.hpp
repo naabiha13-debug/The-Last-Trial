@@ -18,8 +18,12 @@ void drawLevel3()
 		drawJungleDolls();
 		drawJunglePapers();
 		drawJunglePlayer();
+		drawPinMessage();
+		drawMImage();
+		drawMergeImage();
 		drawDontMoveSign();
 		drawDoorTransition();
+		drawDistanceCounter();
 		return;
 	}
 

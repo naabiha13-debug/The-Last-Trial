@@ -10,11 +10,11 @@
 int jungleWorldX = 0;
 const int jungleTotalWidth = 7000;
 const int jungleScreenWidth = 1000;
-const int jungleMaxScroll = jungleTotalWidth - jungleScreenWidth; // 6000
+const int jungleMaxScroll = jungleTotalWidth - jungleScreenWidth;
 
 // River limits in world coordinates (river starts at screen 3)
-const int riverStartWorldX = 3 * jungleScreenWidth + waveStartX; // Boat waits here
-const int riverEndWorldX = 6 * jungleScreenWidth + waveEndX;     // Boat cannot go past this
+const int riverStartWorldX = 3 * jungleScreenWidth + waveStartX;
+const int riverEndWorldX = 6 * jungleScreenWidth + waveEndX;
 
 // Player walking animation state
 int jungleFrame = 0;
@@ -25,20 +25,23 @@ bool jungleFacingRight = true;
 int dollWorldX[3] = { 500, 1500, 2500 };
 int dollY = 180;
 
-int dollFrame[3] = { 4, 4, 4 };   // Start idle (d5)
-int dollState[3] = { 0, 0, 0 };   // 0 = idle, 1 = turning to face, 2 = holding, 3 = turning back
+int dollFrame[3] = { 4, 4, 4 };
+int dollState[3] = { 0, 0, 0 };
 int dollTimer[3] = { 0, 0, 0 };
 int dollCyclesDone[3] = { 0, 0, 0 };
 const int dollMaxCycles = 3;
 
-int playerWorldX = 100;           // Player's actual position in the world
-const int jungleMiddleX = 465;    // Screen X where the camera starts following the player
+int playerWorldX = 100;
+const int jungleMiddleX = 465;
 int jungleScreenPlayerY = 110;
 bool jungleDead = false;
-bool inBoat = false;              // True once the player has reached the river start
+bool exitingBoat = false;      // True while the jump-off-the-boat animation is playing
+bool reachedRiverEnd = false;
+bool showPinMessage = false;
+// NOTE: inBoat and boardingBoat are declared in river.hpp — NOT redeclared here
 
 // Papers to collect
-int paperWorldX[3] = { 650, 1650, 2650 };
+int paperWorldX[3] = { 650, 1650, 2750 };
 int paperY = 100;
 bool paperCollected[3] = { false, false, false };
 
@@ -52,15 +55,14 @@ int activePaperIndex = -1;
 int rockWorldX[3];
 const int rockWidth = 120;
 const int rockHeight = 100;
-const int rockY = 100; // Ground-aligned with the player's feet
+const int rockY = 100;
 
-// Places one rock at a random position inside each of the first three screens
 void initJungleRocks()
 {
 	for (int i = 0; i < 3; i++)
 	{
 		int screenStart = i * jungleScreenWidth;
-		rockWorldX[i] = screenStart + 300 + (rand() % 400); // Random spot, away from the edges
+		rockWorldX[i] = screenStart + 300 + (rand() % 400);
 	}
 }
 
@@ -70,9 +72,7 @@ int jungleJumpFrame = 0;
 int jungleJumpTimer = 0;
 
 const int jumpMaxHeight = 140;
-// jumpFrameCount is defined in Level3_Assets.hpp (8 frames)
 
-// Draws the jungle and river backgrounds, the waves, the boat and the props
 void drawJungleBackground()
 {
 	for (int i = 0; i < 7; i++)
@@ -86,29 +86,24 @@ void drawJungleBackground()
 	}
 
 	drawBirds(jungleWorldX, 3);
-	// Waves cover the whole river (river starts at screen 3)
 	drawRiverWaves(jungleWorldX, 3);
 	drawUpperWaveRow(jungleWorldX, 3);
 
-	// The boat waits at the river start, then follows the player once the player boards it
-	int boatWorldX = inBoat ? playerWorldX : riverStartWorldX;
+	int boatWorldX = inBoat ? playerWorldX : (reachedRiverEnd ? (riverEndWorldX - boatWidth) : riverStartWorldX);
 	bool boatMoving = inBoat && isSpecialKeyPressed(GLUT_KEY_RIGHT);
 	drawBoat(jungleWorldX, boatWorldX, boatMoving, inBoat);
-
 }
 
-// Draws the prop on the seam between screen 1 and screen 2
 void drawJungleProps()
 {
-	int propWidth = 210;   // prop1.png actual width
-	int propHeight = 210;  // prop1.png actual height
-	int boundaryWorldX = jungleScreenWidth; // Seam between screen 1 and screen 2
+	int propWidth = 210;
+	int propHeight = 210;
+	int boundaryWorldX = jungleScreenWidth;
 
 	int propScreenX = boundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
 	iShowImage(propScreenX, 147, propWidth, propHeight, prop1Img);
 }
 
-// Draws all rocks
 void drawJungleRocks()
 {
 	for (int i = 0; i < 3; i++)
@@ -118,7 +113,6 @@ void drawJungleRocks()
 	}
 }
 
-// Draws the dolls that are visible on screen
 void drawJungleDolls()
 {
 	for (int i = 0; i < 3; i++)
@@ -129,32 +123,26 @@ void drawJungleDolls()
 	}
 }
 
-// Draws the player (walking, jumping or picking up a paper)
 void drawJunglePlayer()
 {
 	int screenPlayerX = playerWorldX - jungleWorldX;
 
-	// Nothing to draw when the player is dead
 	if (jungleDead)
 	{
 		return;
 	}
 
-	// The player is drawn as the boat while in the river
-	// (remove this line if the boat images do not include the player)
 	if (inBoat)
 	{
 		return;
 	}
 
-	// Paper pickup animation
 	if (pickingUpPaper)
 	{
 		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, pickupImg[pickupPaperFrame]);
 		return;
 	}
 
-	// Jump animation: frames advance while the player rises and falls along a sine curve
 	if (jumpingJungle)
 	{
 		float jumpProgress = jungleJumpFrame / (float)(jumpFrameCount - 1);
@@ -163,14 +151,12 @@ void drawJunglePlayer()
 		return;
 	}
 
-	// Normal walking frames
 	if (jungleFacingRight)
 		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, l3walkFImg[jungleFrame]);
 	else
 		iShowImage(screenPlayerX, jungleScreenPlayerY, 120, 150, l3walkBImg[jungleFrame]);
 }
 
-// Runs each doll's state machine: idle -> turn to face -> hold -> turn back
 void updateJungleDolls()
 {
 	for (int i = 0; i < 3; i++)
@@ -179,7 +165,6 @@ void updateJungleDolls()
 
 		if (dollState[i] == 0)
 		{
-			// Idle: wait, then start turning to face the player
 			if (dollTimer[i] >= 90)
 			{
 				dollTimer[i] = 0;
@@ -188,7 +173,6 @@ void updateJungleDolls()
 		}
 		else if (dollState[i] == 1)
 		{
-			// Turning to face the player
 			if (dollTimer[i] >= 20)
 			{
 				dollTimer[i] = 0;
@@ -202,7 +186,6 @@ void updateJungleDolls()
 		}
 		else if (dollState[i] == 2)
 		{
-			// Holding: the player must not move now
 			if (dollTimer[i] >= 80)
 			{
 				dollTimer[i] = 0;
@@ -211,7 +194,6 @@ void updateJungleDolls()
 		}
 		else if (dollState[i] == 3)
 		{
-			// Turning back to idle
 			if (dollTimer[i] >= 20)
 			{
 				dollTimer[i] = 0;
@@ -227,7 +209,6 @@ void updateJungleDolls()
 	}
 }
 
-// Draws papers that are not collected yet
 void drawJunglePapers()
 {
 	for (int i = 0; i < 3; i++)
@@ -241,22 +222,60 @@ void drawJunglePapers()
 	}
 }
 
-// Main update function for the jungle and river level (called every tick)
+// Draws the pin message image above the player's head after landing from the boat
+void drawPinMessage()
+{
+	if (!showPinMessage)
+		return;
+
+	int screenPlayerX = playerWorldX - jungleWorldX;
+
+	int msgWidth = 320;
+	int msgHeight = 230;
+	int msgX = screenPlayerX + (120 - msgWidth) / 2;
+	int msgY = jungleScreenPlayerY + 100;
+
+	iShowImage(msgX, msgY, msgWidth, msgHeight, pinmsgImg);
+}
+bool showMImage = false;
+int mImageTimer = 0;
+const int mImageDuration = 120;   
+
+bool showMergeImage = false;
+void drawMImage()
+{
+	if (!showMImage)
+		return;
+
+	iShowImage(400, 350, 450, 20, mImg);   // position/size adjust
+}
+
+void drawMergeImage()
+{
+	if (!showMergeImage)
+		return;
+
+	iShowImage(0, 0, 1000, 600, mergeImg);   // position/size adjust 
+}
 void updateJungle()
 {
-	// Stop everything when the player is dead
+	if (showMImage)
+	{
+		mImageTimer++;
+		if (mImageTimer >= mImageDuration)
+		{
+			showMImage = false;
+			mImageTimer = 0;
+		}
+	}
 	if (jungleDead)
 		return;
 
-	// Keep the wave animation running
 	updateRiverWaves();
-
 	updateBirds();
 
-	// The player is in the boat once they reach the river start
-	inBoat = (playerWorldX >= riverStartWorldX);
+	// NOTE: auto-boarding line removed — inBoat is now only set when the boarding jump finishes
 
-	// In the boat: up and down arrows move the boat vertically inside the water
 	if (inBoat)
 	{
 		if (isSpecialKeyPressed(GLUT_KEY_UP))
@@ -268,7 +287,16 @@ void updateJungle()
 		if (boatY > boatMaxY) boatY = boatMaxY;
 	}
 
-	// Paper pickup animation: play the frames, then mark the paper as collected
+	// Boat reached river's end — jump off only when player presses UP+RIGHT
+	if (inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT)
+		&& playerWorldX >= (riverEndWorldX - boatWidth))
+	{
+		jumpingJungle = true;
+		exitingBoat = true;
+		inBoat = false;
+		reachedRiverEnd = true;
+	}
+
 	if (pickingUpPaper)
 	{
 		pickupPaperTimer++;
@@ -288,7 +316,6 @@ void updateJungle()
 		return;
 	}
 
-	// Down arrow near a paper starts the pickup animation
 	if (isSpecialKeyPressed(GLUT_KEY_DOWN))
 	{
 		for (int i = 0; i < 3; i++)
@@ -304,11 +331,13 @@ void updateJungle()
 		}
 	}
 
-	// Up + right arrow starts a jump (not allowed while in the boat)
 	if (!inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT))
+	{
 		jumpingJungle = true;
+		if (playerWorldX + 120 >= riverStartWorldX - 30)
+			boardingBoat = true;
+	}
 
-	// Jump animation: advance the frames, and push the player past a rock if they land on it
 	if (jumpingJungle)
 	{
 		jungleJumpTimer++;
@@ -326,14 +355,29 @@ void updateJungle()
 					if (playerWorldX + 120 > rockWorldX[i] && playerWorldX < rockWorldX[i] + rockWidth)
 						playerWorldX = rockWorldX[i] + rockWidth;
 				}
+
+				if (boardingBoat)
+				{
+					boardingBoat = false;
+					inBoat = true;
+					playerWorldX = riverStartWorldX;
+				}
+
+				if (exitingBoat)
+				{
+					exitingBoat = false;
+					playerWorldX = riverEndWorldX;   // Land just past where the boat docked
+					jungleFacingRight = true;
+					showPinMessage = true;
+				}
 			}
 		}
 	}
 
-	// Moving while a doll is watching kills the player (only in the jungle part)
+	// Moving while a doll is watching kills the player (only in the jungle part, before the river)
 	bool isMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT);
 
-	if (isMoving && playerWorldX < jungleScreenWidth * 3)
+	if (isMoving && !inBoat && !reachedRiverEnd && playerWorldX < jungleScreenWidth * 3)
 	{
 		for (int i = 0; i < 3; i++)
 		{
@@ -347,16 +391,16 @@ void updateJungle()
 
 	const int playerWidth = 120;
 
-	// Right edge limit: the end of the world, or the end of the river while in the boat
 	int worldMax = jungleTotalWidth - playerWidth;
 	if (inBoat)
 		worldMax = riverEndWorldX - boatWidth;
+	else if (!jumpingJungle && !reachedRiverEnd)
+		worldMax = riverStartWorldX - playerWidth;
 
 	if (isSpecialKeyPressed(GLUT_KEY_RIGHT))
 	{
 		jungleFacingRight = true;
 
-		// A rock blocks the player unless they are jumping
 		bool blockedByRock = false;
 		if (!jumpingJungle)
 		{
@@ -367,21 +411,17 @@ void updateJungle()
 			}
 		}
 
-		// Move faster while jumping
 		int moveSpeed = jumpingJungle ? 10 : 5;
 
-		// Move the player forward
 		if (playerWorldX < worldMax && !blockedByRock)
 			playerWorldX += moveSpeed;
 
-		// Scroll the camera once the player passes the middle of the screen
 		if ((playerWorldX - jungleWorldX) > jungleMiddleX && jungleWorldX < jungleMaxScroll)
 			jungleWorldX += moveSpeed;
 
 		if (jungleWorldX > jungleMaxScroll)
 			jungleWorldX = jungleMaxScroll;
 
-		// Advance the walking animation
 		jungleWalkTimer++;
 		if (jungleWalkTimer >= 5)
 		{
@@ -395,18 +435,15 @@ void updateJungle()
 	{
 		jungleFacingRight = false;
 
-		// Move the player backward
 		if (playerWorldX > 0)
 			playerWorldX -= 5;
 
-		// Scroll the camera back when the player is left of the middle
 		if ((playerWorldX - jungleWorldX) < jungleMiddleX && jungleWorldX > 0)
 			jungleWorldX -= 5;
 
 		if (jungleWorldX < 0)
 			jungleWorldX = 0;
 
-		// Advance the walking animation
 		jungleWalkTimer++;
 		if (jungleWalkTimer >= 5)
 		{
@@ -418,18 +455,18 @@ void updateJungle()
 	}
 	else
 	{
-		// No movement key held: reset to the idle pose
 		jungleWalkTimer = 0;
 		jungleFrame = 0;
 	}
 }
 
-// Shows the "don't move" sign while a doll is turning or holding
 void drawDontMoveSign()
 {
-	// No dolls in the river part
-	if (playerWorldX >= jungleScreenWidth * 3)
-		return;
+	
+		if (reachedRiverEnd || playerWorldX >= jungleScreenWidth * 3)
+			return;
+	
+	
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -439,6 +476,25 @@ void drawDontMoveSign()
 			return;
 		}
 	}
+}
+
+const int totalControlRoomDistance = 600;
+
+void drawDistanceCounter()
+{
+	// Progress from 0.0 (start of jungle) to 1.0 (player has landed at the river's end)
+	float progress = (float)playerWorldX / (float)riverEndWorldX;
+	if (progress < 0.0f) progress = 0.0f;
+	if (progress > 1.0f) progress = 1.0f;
+
+	int remaining = totalControlRoomDistance - (int)(progress * totalControlRoomDistance);
+	if (remaining < 0) remaining = 0;
+
+	char buffer[64];
+	sprintf_s(buffer, sizeof(buffer), "CONTROL ROOM DISTANCE : %dm", remaining);
+
+	iSetColor(255, 255, 255);
+	iText(650, 560, buffer, GLUT_BITMAP_HELVETICA_18);
 }
 
 #endif
