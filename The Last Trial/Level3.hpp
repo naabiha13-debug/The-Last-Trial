@@ -85,6 +85,7 @@ void drawLevel3()
 		drawJungleDolls();
 		drawJunglePapers();
 		drawJunglePlayer();
+		drawJungleGrassTransitions();
 		drawMsg3();
 		drawMsg4();
 		drawPinFinal();

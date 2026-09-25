@@ -231,20 +231,26 @@ void drawJungleProps(bool frontPass)
 	int riverBoundaryWorldX = 3 * jungleScreenWidth;
 	int riverPropScreenX = riverBoundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
 	if ((treePropY <= boatY) == frontPass)
-		iShowImage(riverPropScreenX - 20, treePropY, propWidth, propHeight, treePropImg[0]);
+		iShowImage(riverPropScreenX - 17, treePropY, propWidth+20, propHeight, treePropImg[0]);
 
-	int prop3Y = treePropY - propHeight - 120;
-	if ((prop3Y <= boatY) == frontPass)
-		iShowImage(riverPropScreenX, prop3Y, propWidth, propHeight - 10, propImg[2]);
+	
+
 
 	int river1PropWorldX = riverBoundaryWorldX + 300;
 	int river1PropScreenX = river1PropWorldX - jungleWorldX;
 
-	// prop position fixed 
 	int prop4Y = boatRestY + 70;
 	if ((prop4Y <= boatY) == frontPass)
 		iShowImage(river1PropScreenX - 75, prop4Y, propWidth, propHeight - 20, propImg[3]);
 
+	const int prop1GapY = 10;
+	int prop1BelowY = prop4Y - (propHeight - 20) + prop1GapY;
+	if (frontPass)
+		iShowImage(river1PropScreenX - 75, prop1BelowY, propWidth, propHeight, propImg[1]);
+
+	int prop3Y = treePropY - propHeight - 120;
+	if ((prop3Y <= boatY) == frontPass)
+		iShowImage(riverPropScreenX + 10, prop3Y, propWidth, propHeight - 10, propImg[2]);
 	int river3to4BoundaryWorldX = 6 * jungleScreenWidth;
 	int river3to4PropScreenX = river3to4BoundaryWorldX - jungleWorldX - (propWidth / 2) - 5;
 	if ((152 <= boatY) == frontPass)
@@ -270,7 +276,7 @@ void drawJungleProps(bool frontPass)
 		if ((dockProp6Y <= boatY) == frontPass)
 			iShowImage(dockScreenX - 110, dockProp6Y - 2100, propWidth, propHeight, propImg[5]);
 
-		if ((dockProp4Y <= boatY) == frontPass)
+		if ( frontPass)
 			iShowImage(dockScreenX - 110, dockProp4Y - 80, propWidth, propHeight, propImg[3]);
 	}
 }
@@ -378,7 +384,19 @@ void updateJungleDolls()
 		}
 	}
 }
+const int grassWidth = 220;
+const int grassHeight = 160;
+const int grass2WorldX = 1 * jungleScreenWidth;   // Jungle1 -> Jungle2 transition
+const int grass1WorldX = 3 * jungleScreenWidth;   // Jungle3 -> River1 transition
+const int grassY = 40;   // TODO: ground-level match korte fine-tune koro
 
+void drawJungleGrassTransitions()
+{
+	
+	int screenX1 = grass1WorldX - jungleWorldX - grassWidth / 2;
+	if (screenX1 > -grassWidth && screenX1 < 1000)
+		iShowImage(screenX1 , grassY - 70, grassWidth, grassHeight+20, grass1Img);
+}
 void drawJunglePapers()
 {
 	for (int i = 0; i < 3; i++)
@@ -431,7 +449,7 @@ void drawMImage()
 	if (!showMImage)
 		return;
 
-	iShowImage(400, 350, 450, 20, mImg);
+	iShowImage(350, 350, 450, 20, mImg);
 }
 
 void drawMergeImage()
@@ -458,23 +476,16 @@ void handleJungleClick(int mx, int my)
 		return;
 	}
 
-	if (showMsg3)
-	{
-		bool insideControlRoom =
-			mx >= controlRoomBtnX && mx <= controlRoomBtnX + controlRoomBtnW &&
-			my >= controlRoomBtnY && my <= controlRoomBtnY + controlRoomBtnH;
-
-		if (insideControlRoom)
-		{
-			showMsg3 = false;
-			showMsg4 = true;
-		}
-		return;
-	}
-
 	if (showMsg4)
 	{
 		showMsg4 = false;
+		showMsg3 = true;
+		return;
+	}
+
+	if (showMsg3)
+	{
+		showMsg3 = false;
 		showMImage = true;
 		mImageTimer = 0;
 		return;
@@ -493,9 +504,17 @@ void handleJungleClick(int mx, int my)
 		waitingForPinClick = false;
 		showMergeImage = false;
 		showPinFinal = true;
+		return;
 	}
-}
 
+	
+	bool insideControlRoom =
+		mx >= controlRoomBtnX && mx <= controlRoomBtnX + controlRoomBtnW &&
+		my >= controlRoomBtnY && my <= controlRoomBtnY + controlRoomBtnH;
+
+	if (reachedRiverEnd && insideControlRoom)
+		showMsg4 = true;
+}
 void updateBottles()
 {
 	if (!inBoat)
@@ -664,7 +683,7 @@ void updateJungle()
 					jungleFacingRight = true;
 
 					jungleScreenPlayerY = river4BankPlayerY;
-					showMsg3 = true;
+					// msg3 ekhon r ekhane auto show hobe na — control room click -> msg4 -> click -> msg3
 				}
 			}
 		}
