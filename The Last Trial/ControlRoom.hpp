@@ -223,7 +223,11 @@ int crMaskRawHitsOnPlayer = 0;
 
 const int crHitsPerStage = 5;   // every 5 hits = 1 health stage 
 
-
+// ---------------- Success-screen back button ----------------
+const int crBackBtnWidth = 220;
+const int crBackBtnHeight = 60;
+const int crBackBtnX = (controlRoomScreenWidth - crBackBtnWidth) / 2;   // TODO: adjust position
+const int crBackBtnY = 40;                                              // TODO: adjust position
 
 
 
@@ -432,7 +436,7 @@ void updateMaskGuard()
 						crGuardHitsOnPlayer++;
 					}
 
-					if (crGuardHitsOnPlayer >= 4)
+					if (crGuardHitsOnPlayer >= 3)
 					{
 						crPlayerDefeated = true;
 						crCombatOver = true;
@@ -583,7 +587,7 @@ void updateControlRoom()
 						crPlayerHitsOnGuard++;
 					}
 
-					if (crPlayerHitsOnGuard >= 4)
+					if (crPlayerHitsOnGuard >= 3)
 					{
 						crMaskGuardDefeated = true;
 						crCombatOver = true;
@@ -592,6 +596,8 @@ void updateControlRoom()
 					}
 				}
 			}
+			updateControlRoomGuard();
+			updateMaskGuard();
 			return;
 		}
 		else
@@ -642,6 +648,8 @@ void updateControlRoom()
 					crAttackFrame = 0;
 				}
 			}
+			updateControlRoomGuard();
+			updateMaskGuard();
 			return;
 		}
 	}
@@ -703,11 +711,12 @@ void updateControlRoom()
 	
 void drawControlRoom()
 {
-if (crShowUsbSuccess)
-{
-	iShowImage(0, 0, controlRoomScreenWidth, 600, usbSuccessImg);
-	return;
-}
+	if (crShowUsbSuccess)
+	{
+		iShowImage(0, 0, controlRoomScreenWidth, 600, usbSuccessImg);
+		iShowImage(crBackBtnX, crBackBtnY, crBackBtnWidth, crBackBtnHeight, backBtnImg);
+		return;
+	}
 
 	drawControlRoomBackground();
 	drawControlRoomProps();

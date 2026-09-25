@@ -532,6 +532,21 @@ void updateJungle()
 	if (jungleDead)
 		return;
 
+	// Doll danger check 
+	bool dollDangerMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT)
+		|| pickingUpPaper || isSpecialKeyPressed(GLUT_KEY_DOWN);
+	if (dollDangerMoving && !inBoat && !reachedRiverEnd && playerWorldX < jungleScreenWidth * 3)
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			if (dollState[i] == 2)
+			{
+				jungleDead = true;
+				return;
+			}
+		}
+	}
+
 	updateRiverWaves();
 	updateBirds();
 	updateBottles();
@@ -651,20 +666,6 @@ void updateJungle()
 					jungleScreenPlayerY = river4BankPlayerY;
 					showMsg3 = true;
 				}
-			}
-		}
-	}
-
-	bool isMoving = isSpecialKeyPressed(GLUT_KEY_RIGHT) || isSpecialKeyPressed(GLUT_KEY_LEFT);
-
-	if (isMoving && !inBoat && !reachedRiverEnd && playerWorldX < jungleScreenWidth * 3)
-	{
-		for (int i = 0; i < 3; i++)
-		{
-			if (dollState[i] == 2)
-			{
-				jungleDead = true;
-				return;
 			}
 		}
 	}

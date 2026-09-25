@@ -29,6 +29,7 @@ const int BOT_JUMP_LOOKAHEAD_MIN = 40;
 const int BOT_JUMP_LOOKAHEAD_MAX = 90;
 const int BOT_MISTAKE_CHANCE_PERCENT = 15;
 const float BOT_SPEED_PX_PER_MS = (float)BOT_RUN_SPEED / (float)BOT_RUN_FRAME_DELAY;
+const int BOT_BISCUIT_MISS_CHANCE_PERCENT = 30; // % chance bot skips a given biscuit entirely
 
 float botJumpTargetDistance = 0.0f;
 float botJumpDistanceCovered = 0.0f;
@@ -150,7 +151,7 @@ void updateBotBiscuits()
 
 	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
 	{
-		if (biscuitCollectedByBot[i])
+		if (biscuitCollectedByBot[i] || botBiscuitMissed[i])
 			continue;
 
 		int biscuitCenterX = biscuitWorldX[i] + 15;
@@ -185,7 +186,7 @@ void updateBotJump()
 		// 1. Auto-jump for biscuit ahead
 		for (int b = 0; b < L2_BISCUIT_COUNT; b++)
 		{
-			if (!biscuitCollectedByBot[b])
+			if (!biscuitCollectedByBot[b] && !botBiscuitMissed[b])
 			{
 				int dist = biscuitWorldX[b] - botCenterX;
 				if (dist >= 30 && dist <= 85)

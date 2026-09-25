@@ -26,6 +26,7 @@ float brokenTileY[L2_BRIDGE_TILE_COUNT];
 int bridgeFallIndex = 0;
 
 DWORD bridgeStartTime;
+bool catchKeyWasDown = false; // for edge-detection on 'C' press
 
 
 // =====================================
@@ -37,6 +38,7 @@ bool biscuitCollectedByPlayer[L2_BISCUIT_COUNT];
 
 
 bool biscuitCollectedByBot[L2_BISCUIT_COUNT];
+bool botBiscuitMissed[L2_BISCUIT_COUNT];
 
 
 // =====================================
@@ -152,6 +154,7 @@ void initBiscuits()
 		biscuitWorldX[i] = 180 + step * (i + 1);
 		biscuitCollectedByPlayer[i] = false;
 		biscuitCollectedByBot[i] = false;
+		botBiscuitMissed[i] = (rand() % 100) < BOT_BISCUIT_MISS_CHANCE_PERCENT;
 	}
 }
 
@@ -185,8 +188,8 @@ void updateLevel2()
 	if (!playerHasMovedOnce)
 	{
 		bool movingCheck =
-			(GetAsyncKeyState('D') & 0x8000) ||
-			(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+			((GetAsyncKeyState('D') & 0x8000) != 0) ||
+			((GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0);
 
 		if (movingCheck)
 		{
@@ -223,6 +226,10 @@ void updateLevel2()
 	int playerWorldX = playerX + playerBgOffset;
 	int playerCenterX = playerWorldX + 25;
 
+	bool catchKeyDown = ((GetAsyncKeyState('C') & 0x8000) != 0);
+	bool catchKeyPressed = catchKeyDown && !catchKeyWasDown;
+	catchKeyWasDown = catchKeyDown;
+
 	for (int i = 0; i < L2_BISCUIT_COUNT; i++)
 	{
 		if (biscuitCollectedByPlayer[i])
@@ -233,7 +240,7 @@ void updateLevel2()
 		if (dist < 0)
 			dist = -dist;
 
-		if (dist <= L2_BISCUIT_CATCH_RANGE)
+		if (dist <= L2_BISCUIT_CATCH_RANGE && catchKeyPressed)
 		{
 			biscuitCollectedByPlayer[i] = true;
 
@@ -245,7 +252,6 @@ void updateLevel2()
 			triggerPlayerCatch();
 		}
 	}
-
 	// =====================================
 	// FREEZE EVENT
 	// =====================================
@@ -268,13 +274,20 @@ void updateLevel2()
 		if (freezeElapsed >= FREEZE_GRACE_PERIOD)
 		{
 			bool movingRightNow =
-				(GetAsyncKeyState('D') & 0x8000) ||
-				(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+				((GetAsyncKeyState('D') & 0x8000) != 0) ||
+				((GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0);
 
-			if (movingRightNow)
+			if (movingRightNow && !playerFailedFreeze)
 			{
 				playerFailedFreeze = true;
-				collapseTileUnder(findPlayerTileIndex());
+
+				int i = findPlayerTileIndex();
+
+				if (i >= 0 && i < L2_BRIDGE_TILE_COUNT &&
+					!bridgeGap[i] && bridgeState[i] != 2)
+				{
+					bridgeState[i] = 2; // instantly gone — no slow fall, catches them right away
+				}
 			}
 		}
 
@@ -290,8 +303,10 @@ void updateLevel2()
 	// =====================================
 
 	bool movingRight =
-		(GetAsyncKeyState('D') & 0x8000) ||
-		(GetAsyncKeyState(VK_RIGHT) & 0x8000);
+		((GetAsyncKeyState('D') & 0x8000) != 0) ||
+		((GetAsyncKeyState(VK_RIGHT) & 0x8000) != 0);
+	if (playerFailedFreeze)
+		movingRight = false;
 
 
 	if (movingRight)

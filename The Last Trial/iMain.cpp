@@ -282,7 +282,36 @@ void iMouse(int button, int state, int mx, int my)
 			}
 			else if (waitingRoomStage == 6)
 			{
-				handleJungleClick(mx, my);
+				if (pinUnlocked)
+				{
+					if (crShowUsbSuccess)
+					{
+						bool hitCrBack =
+							mx >= crBackBtnX && mx <= crBackBtnX + crBackBtnWidth &&
+							my >= crBackBtnY && my <= crBackBtnY + crBackBtnHeight;
+
+						if (hitCrBack)
+						{
+							currentScreen = 2;
+							jungleDead = false;
+							pinWrong = false;
+							crPlayerDefeated = false;
+							playMenuMusic();
+						}
+						else
+						{
+							handleControlRoomClick(mx, my);
+						}
+					}
+					else
+					{
+						handleControlRoomClick(mx, my);
+					}
+				}
+				else
+				{
+					handleJungleClick(mx, my);
+				}
 			}
 			else
 			{
