@@ -319,6 +319,10 @@ void iMouse(int button, int state, int mx, int my)
 					handleJungleClick(mx, my);
 				}
 			}
+			else   // <<< NEW: waiting room stages 0,1,2,4,5,7 - vase/door/cue clicks
+			{
+				handleWaitingRoomClick(mx, my);
+			}
 		}
 	}
 }

@@ -14,7 +14,7 @@ int cueH = 43;
 
 // 0=idle, 1=msg1(over head), 2=msg2(fullscreen), 3=waiting for 'I',
 // 4=take1->2->3 sequence, 5=warning1->2 sequence, 6=done
-int waitingRoomStage = 6;
+int waitingRoomStage = 0;
 
 int wrTimer = 0;
 int takeFrame = 0;
