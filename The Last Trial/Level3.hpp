@@ -74,8 +74,22 @@ void drawLevel3()
 
 	if (waitingRoomStage == 6)
 	{
-		if (pinUnlocked)
+		if (showLevel3Gp1)
 		{
+			iShowImage(0, 0, 1000, 600, level3gp1Img);
+			iShowImage(gpNextBtnX, gpNextBtnY, gpNextBtnW, gpNextBtnH, nextImg);
+			return;
+		}
+
+		if (pinUnlocked && !showPinFinal)
+		{
+			if (showLevel3Gp2)
+			{
+				iShowImage(0, 0, 1000, 600, level3gp2Img);
+				iShowImage(gpNextBtnX, gpNextBtnY, gpNextBtnW, gpNextBtnH, nextImg);
+				return;
+			}
+
 			drawControlRoom();
 			return;
 		}
@@ -85,7 +99,7 @@ void drawLevel3()
 		drawJungleDolls();
 		drawJunglePapers();
 		drawJunglePlayer();
-		drawJungleGrassTransitions();
+
 		drawMsg3();
 		drawMsg4();
 		drawPinFinal();

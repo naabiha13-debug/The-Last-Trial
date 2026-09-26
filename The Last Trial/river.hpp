@@ -35,6 +35,10 @@ const int boatMinY = 20;
 const int boatMaxY = 180;
 const int waveDownFrame = 0;
 
+
+const int boatHitboxHeight = 15;   
+const int boatHitboxOffsetY = 55;
+
 int boatY = 100;
 bool inBoat = false;
 bool boardingBoat = false;
@@ -223,15 +227,17 @@ void drawBirds(int worldX, int jungleScreenCount)
 const int treeCount = 4;
 const int treeWidth = 90;
 const int treeHeight = 180;
-const int treeCollisionGapY = 45;   // boat er Y ei gap er beshi durey thakle tobei safe
+const int treeTrunkOffsetX = 10;
+const int treeTrunkWidth = 90;
+const int treeTrunkOffsetY = 100;
+const int treeTrunkHeight = 25;
+const int treeCollisionGapY = 35;
 
 int treeWorldX[treeCount];
 int treeY[treeCount];
 bool treeInit = false;
-bool boatHitTree = false;   // jungle.hpp ei flag check kore game-over korbe
-
-
-const int minTreeGapX = 220;   // 2 ta tree er majhe minimum world-distance, kom holei stack hoye jabe
+bool boatHitTree = false;   
+int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
 
 void initTrees(int jungleScreenCount)
 {
@@ -242,32 +248,18 @@ void initTrees(int jungleScreenCount)
 
 	// River4 half
 	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2;
-	int zoneSpan = zoneEnd - zoneStart;
 
-	int treeMinY = 30;  
-	int treeMaxY = 120;
+	//gap between trees
+	int zoneSpan = zoneEnd - zoneStart;
+	int segmentWidth = zoneSpan / treeCount;
+
+	int treeMinY = boatMinY + 20;
+	int treeMaxY = boatMaxY - 20;
 
 	for (int i = 0; i < treeCount; i++)
 	{
-		int candidateX;
-		bool tooClose;
-		int attempts = 0;
-		do
-		{
-			candidateX = zoneStart + (rand() % zoneSpan);
-			tooClose = false;
-			for (int j = 0; j < i; j++)
-			{
-				if (abs(candidateX - treeWorldX[j]) < minTreeGapX)
-				{
-					tooClose = true;
-					break;
-				}
-			}
-			attempts++;
-		} while (tooClose && attempts < 200);   // 200 try er por jeta pai oitai rekhe dibe, hang korbe na
-
-		treeWorldX[i] = candidateX;
+		int segStart = zoneStart + i * segmentWidth;
+		treeWorldX[i] = segStart + (rand() % segmentWidth) - treeExtraShiftX[i];
 		treeY[i] = treeMinY + (rand() % (treeMaxY - treeMinY));
 	}
 }
@@ -282,7 +274,7 @@ void drawTrees(int worldX, bool frontPass)
 		{
 			int screenX = treeWorldX[i] - worldX;
 			if (screenX > -treeWidth && screenX < 1000)
-				iShowImage(screenX, treeY[i], treeWidth + 80, treeHeight, treeImg);
+				iShowImage(screenX, treeY[i], treeWidth + 60, treeHeight - 15, treeImg);
 		}
 	}
 }
@@ -292,16 +284,24 @@ void updateTrees(int boatWorldX)
 {
 	if (!inBoat) return;
 
+	int boatCenterX = boatWorldX + boatWidth / 2;
+	int boatTop = boatY + boatHitboxOffsetY;
+	int boatBottom = boatTop + boatHitboxHeight;
+
 	for (int i = 0; i < treeCount; i++)
 	{
-		int dx = abs((boatWorldX + boatWidth / 2) - treeWorldX[i]);
-		int dy = abs(boatY - treeY[i]);
+		int trunkLeft = treeWorldX[i] + treeTrunkOffsetX;
+		int trunkRight = trunkLeft + treeTrunkWidth;
+		int trunkTop = treeY[i] + treeTrunkOffsetY;
+		int trunkBottom = trunkTop + treeTrunkHeight;
 
-		if (dx < 50 && dy < treeCollisionGapY)
+		bool overlapX = boatCenterX > trunkLeft && boatCenterX < trunkRight;
+		bool overlapY = boatBottom > trunkTop && boatTop < trunkBottom;
+
+		if (overlapX && overlapY)
 			boatHitTree = true;
 	}
 }
-
 // ---------------- Axe (one-time pickup) ----------------
 
 int axeWorldX;
@@ -317,28 +317,8 @@ void initAxe(int jungleScreenCount)
 	int zoneStart = jungleScreenCount * riverScreenWidth + waveStartX;
 	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + waveEndX;
 
-	int candidateX, candidateY;
-	bool tooCloseToTree;
-	do
-	{
-		candidateX = zoneStart + (rand() % (zoneEnd - zoneStart));
-		candidateY = boatMinY + (rand() % (boatMaxY - boatMinY));
-
-		tooCloseToTree = false;
-		for (int j = 0; j < treeCount; j++)
-		{
-			bool xClose = abs(candidateX - treeWorldX[j]) < 100;
-			bool yClose = abs(candidateY - treeY[j]) < 60;
-			if (xClose && yClose)
-			{
-				tooCloseToTree = true;
-				break;
-			}
-		}
-	} while (tooCloseToTree);
-
-	axeWorldX = candidateX;
-	axeY = candidateY;
+	axeWorldX = zoneStart + (rand() % (zoneEnd - zoneStart));
+	axeY = boatMinY + (rand() % (boatMaxY - boatMinY));
 }
 
 void drawAxe(int worldX, bool frontPass)

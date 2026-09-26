@@ -208,16 +208,16 @@ bool crMaskGuardDefeated = false;
 bool crMaskGuardAttacking = false;
 int crMaskGuardAttackFrame = 0;
 int crMaskGuardAttackTimer = 0;
-const int crMaskGuardAttackFrameCount = 2;      // crMaskGunAttackImg[2] ase, tai 2 frame
+const int crMaskGuardAttackFrameCount = 2;    
 const int crMaskGuardAttackFrameDelay = 6;
-const int crMaskGuardAttackWidth = 90;          // tomar sprite-er actual size onujayi adjust koro
+const int crMaskGuardAttackWidth = 90;          
 const int crMaskGuardAttackHeight = 80;
 
 const int crMaskGuardAttackForwardOffset = 30;
-const int crMaskGuardAttackDistance = 240;      // ei distance e ashle attack shuru hobe
-const int crMaskCombatRange = 240;      // mask guard-only, alada rakhlam
+const int crMaskGuardAttackDistance = 240;     
+const int crMaskCombatRange = 240;      
 
-// raw hit counters (proti stage e koto hit lagbe)
+
 int crPlayerRawHitsOnMask = 0;
 int crMaskRawHitsOnPlayer = 0;
 
@@ -274,10 +274,10 @@ void drawControlRoomGuard()
 
 void drawControlRoomHealthBars()
 {
-	int playerIdx = crGuardHitsOnPlayer;   // player koto mar khaise
+	int playerIdx = crGuardHitsOnPlayer;
 	if (playerIdx > 3) playerIdx = 3;
 
-	int guardIdx = crPlayerHitsOnGuard;    // guard koto mar khaise
+	int guardIdx = crPlayerHitsOnGuard;   
 	if (guardIdx > 3) guardIdx = 3;
 
 	// Left corner = player health
@@ -290,7 +290,7 @@ void drawControlRoomHealthBars()
 
 void updateControlRoomGuard()
 {
-	if (!crGuardActive || crGuardDefeated)   // added crGuardDefeated check
+	if (!crGuardActive || crGuardDefeated)  
 		return;
 	if (!crGuardActive || crCombatOver)
 		return;
@@ -396,7 +396,7 @@ void updateMaskGuard()
 
 		crPlayerHitsOnGuard = 0;
 		crPlayerRawHitsOnMask = 0;
-		crGuardHitsOnPlayer = 0;      // player health bar-o fresh shuru
+		crGuardHitsOnPlayer = 0;    
 		crMaskRawHitsOnPlayer = 0;
 		crCombatOver = false;
 	}
@@ -422,15 +422,14 @@ void updateMaskGuard()
 			crMaskGuardAttackTimer = 0;
 			crMaskGuardAttackFrame++;
 
-			// eituku exactly first guard er moto - ek loop-e ekbar register hobe
 			if (crMaskGuardAttackFrame == 1 && !crGuardHitRegisteredThisSwing && !crPlayerDefeated)
 			{
 				if (distance <= crMaskCombatRange)
 				{
-					crMaskRawHitsOnPlayer++;             // raw loop count barlo
+					crMaskRawHitsOnPlayer++;          
 					crGuardHitRegisteredThisSwing = true;
 
-					// 5 loop hole tobei 1 health stage kombe
+				
 					if (crMaskRawHitsOnPlayer % crHitsPerStage == 0)
 					{
 						crGuardHitsOnPlayer++;
@@ -447,7 +446,7 @@ void updateMaskGuard()
 			if (crMaskGuardAttackFrame >= crMaskGuardAttackFrameCount)
 			{
 				crMaskGuardAttackFrame = 0;
-				crGuardHitRegisteredThisSwing = false;   // notun loop-er jonno reset — pore loop abar count hobe
+				crGuardHitRegisteredThisSwing = false;  
 			}
 		}
 
@@ -568,7 +567,7 @@ void updateControlRoom()
 				crAttackTimer = 0;
 				crAttackFrame = (crAttackFrame + 1) % crGunAttackFrameCount;
 
-				// notun loop shuru hoiche - previous swing er reset, space chapa thakleo protibar count hobe
+				
 				if (crAttackFrame == 0)
 				{
 					crPlayerHitRegisteredThisSwing = false;

@@ -1,23 +1,16 @@
-// ============================================================================
-// PIN KEYPAD LOGIC — paste this block into Level3_Jungle.hpp, ABOVE the
-// existing handleJungleClick() function (it needs these declared first).
-//
-// Coordinates below were measured directly from pin.png (1620x971) and
-// converted into the same 1000x600 screen space that
-// iShowImage(0, 0, 1000, 600, pinImg) draws into. They should already line
-// up reasonably well, but nudge pinBtnHalfW / pinBtnHalfH / the cx,cy values
-// or the drawPinDisplay() text position if a button feels off — same as the
-// other TODOs already in this file (e.g. controlRoomBtnX/Y/W/H).
-// ============================================================================
-
-#include <string.h>   // strcmp
+ï»¿
+#include <string.h>  
 
 const char correctPin[4] = "731";   // the code the player must enter
 char enteredPin[4] = "";            // digits typed so far, null-terminated
 int enteredPinLen = 0;
 
-bool pinWrong = false;      // true once 3 digits were entered and were wrong
-bool pinUnlocked = false;   // true once 3 digits were entered and matched
+bool pinWrong = false;      
+bool pinUnlocked = false;  
+bool pinUnlockedAcknowledged = false;
+
+int pinUnlockedTimer = 0;
+const int pinUnlockedDisplayFrames = 90;
 
 struct PinButton { char digit; int cx, cy; };
 
@@ -30,7 +23,7 @@ PinButton pinButtons[10] = {
 };
 
 // Half-width / half-height of each button's clickable box (screen pixels).
-// TODO: fine-tune by testing in-game.
+
 const int pinBtnHalfW = 40;
 const int pinBtnHalfH = 25;
 
@@ -40,10 +33,10 @@ void resetPinEntry()
 	enteredPin[0] = '\0';
 	pinWrong = false;
 	pinUnlocked = false;
+	pinUnlockedAcknowledged = false;
+	pinUnlockedTimer = 0;
 }
 
-// Draws the digits typed so far (or WRONG / UNLOCKED) inside the small black
-// LCD screen near the top of pin.png. Call this right after drawPinFinal().
 void drawPinDisplay()
 {
 	if (!showPinFinal)
@@ -53,7 +46,7 @@ void drawPinDisplay()
 
 	if (pinWrong)
 	{
-		iText(430, 410, "WRONG", GLUT_BITMAP_TIMES_ROMAN_24);   // TODO: reposition to match the LCD
+		iText(430, 410, "WRONG", GLUT_BITMAP_TIMES_ROMAN_24); 
 		return;
 	}
 
@@ -72,19 +65,22 @@ void drawPinDisplay()
 	}
 	spaced[p] = '\0';
 
-	iText(460, 410, spaced, GLUT_BITMAP_TIMES_ROMAN_24);   // TODO: reposition to match the LCD
+	iText(460, 410, spaced, GLUT_BITMAP_TIMES_ROMAN_24);   
 }
-
-// Call this at the very top of handleJungleClick(), before its existing steps.
 void handlePinKeypadClick(int mx, int my)
 {
 	if (!showPinFinal)
 		return;
 
-	// After a wrong (or correct) attempt, the next click clears it for a retry.
-	if (pinWrong || pinUnlocked)
+	if (pinWrong)
 	{
 		resetPinEntry();
+		return;
+	}
+
+	if (pinUnlocked)
+	{
+		showPinFinal = false;   // dismiss pin screen on next click
 		return;
 	}
 
@@ -109,7 +105,19 @@ void handlePinKeypadClick(int mx, int my)
 				else
 					pinWrong = true;
 			}
-			return;   // stop checking other buttons once one was hit
+			return;
 		}
+	}
+}   
+void updatePinKeypad()
+{
+	if (!showPinFinal || !pinUnlocked)
+		return;
+
+	pinUnlockedTimer++;
+	if (pinUnlockedTimer >= pinUnlockedDisplayFrames)
+	{
+		showPinFinal = false;
+		pinUnlockedTimer = 0;
 	}
 }

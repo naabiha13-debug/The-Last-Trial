@@ -284,7 +284,13 @@ void iMouse(int button, int state, int mx, int my)
 			{
 				if (pinUnlocked)
 				{
-					if (crShowUsbSuccess)
+					if (showLevel3Gp2)
+					{
+						// Gp2 screen still showing — its Next button logic lives
+						// inside handleJungleClick(), so route there first.
+						handleJungleClick(mx, my);
+					}
+					else if (crShowUsbSuccess)
 					{
 						bool hitCrBack =
 							mx >= crBackBtnX && mx <= crBackBtnX + crBackBtnWidth &&
@@ -313,10 +319,6 @@ void iMouse(int button, int state, int mx, int my)
 					handleJungleClick(mx, my);
 				}
 			}
-			else
-			{
-				handleWaitingRoomClick(mx, my);
-			}
 		}
 	}
 }
@@ -324,54 +326,53 @@ void iMouse(int button, int state, int mx, int my)
 // Special Keys:
 // GLUT_KEY_F1, GLUT_KEY_F2, GLUT_KEY_F3, GLUT_KEY_F4, GLUT_KEY_F5, GLUT_KEY_F6, GLUT_KEY_F7, GLUT_KEY_F8, GLUT_KEY_F9, GLUT_KEY_F10, GLUT_KEY_F11, GLUT_KEY_F12, 
 // GLUT_KEY_LEFT, GLUT_KEY_UP, GLUT_KEY_RIGHT, GLUT_KEY_DOWN, GLUT_KEY_PAGE UP, GLUT_KEY_PAGE DOWN, GLUT_KEY_HOME, GLUT_KEY_END, GLUT_KEY_INSERT
-void fixedUpdate()
-{
-	// Runs the level 1 game loop while that screen is active
-	if (currentScreen == 1)
+	void fixedUpdate()
 	{
-		level1Update();
+		// Runs the level 1 game loop while that screen is active
+		if (currentScreen == 1)
+		{
+			level1Update();
 
-		if (level1GameOver && !level1MusicStopped)
-		{
-			stopLevel1Music();
-			level1MusicStopped = true;
-		}
-		if (!level1GameOver)
-		{
-			level1MusicStopped = false;
-		}
-	}
-	if (currentScreen == 5)
-	{
-		if (!level2ShowingRules)
-		{
-			bool wasIntro = level2Intro;
-			updateLevel2Intro();
-
-			if (wasIntro && !level2Intro)
+			if (level1GameOver && !level1MusicStopped)
 			{
-				bridgeStartTime = GetTickCount();
-				botHealthDecayTime = GetTickCount();
-				playerHealthDecayTime = GetTickCount();
-				playLevel2Music();
+				stopLevel1Music();
+				level1MusicStopped = true;
 			}
-
-			if (!level2Intro)
+			if (!level1GameOver)
 			{
-				if (!level2GameOver)
+				level1MusicStopped = false;
+			}
+		}
+		if (currentScreen == 5)
+		{
+			if (!level2ShowingRules)
+			{
+				bool wasIntro = level2Intro;
+				updateLevel2Intro();
+
+				if (wasIntro && !level2Intro)
 				{
-					updateLevel2();
-					updateBotRun();
-					updateBridgeFall();
-					updateBrokenTiles();
-					updatePlayerFall();
-					updateBotJump();
-					updateBotFall();
+					bridgeStartTime = GetTickCount();
+					botHealthDecayTime = GetTickCount();
+					playerHealthDecayTime = GetTickCount();
+					playLevel2Music();
 				}
-			}
+
+				if (!level2Intro)
+				{
+					if (!level2GameOver)
+					{
+						updateLevel2();
+						updateBotRun();
+						updateBridgeFall();
+						updateBrokenTiles();
+						updatePlayerFall();
+						updateBotJump();
+						updateBotFall();
+					}
+				}
 		}
 	}
-
 	
 	if (currentScreen == 5 && level2GameOver)       
 	{
@@ -389,11 +390,11 @@ void fixedUpdate()
 		{
 			if (waitingRoomStage == 6)
 			{
-				if (pinUnlocked)
+				if (pinUnlocked && !showLevel3Gp2)
 				{
 					updateControlRoom();
 				}
-				else
+				else if (!pinUnlocked)
 				{
 					updateJungle();
 					updateJungleDolls();

@@ -70,9 +70,8 @@ int usbImg;
 int usbSuccessImg;
 int gameOverJungleImg, gameOverRiverImg, gameOverControlImg, backBtnImg, againBtnImg;
 int axeImg;
-int grass1Img;  
-int grass2Img;
-
+int level3gp1Img;   
+int level3gp2Img;
 
 void loadLevel3Assets()
 {
@@ -169,8 +168,8 @@ void loadLevel3Assets()
 	boatLeftUpImg = iLoadImage("Image//boat_left_up.png");
 	bottleImg=iLoadImage( "Image//Bottol.png");
 	treeImg = iLoadImage("Image//tree.png");
-	grass1Img = iLoadImage("Image//grass1.png");
-	grass2Img = iLoadImage("Image//grass2.png");
+	level3gp1Img = iLoadImage("Image//level3gp1.png");
+	level3gp2Img = iLoadImage("Image//level3gp2.png");
 	for (int i = 0; i < 4; i++)
 	{
 		std::string boatPlayerPath = "Image//boat" + std::to_string(i + 1) + ".png";
