@@ -167,7 +167,7 @@ void loadLevel3Assets()
 	boatRightUpImg = iLoadImage("Image//boat_right_up.png");
 	boatLeftUpImg = iLoadImage("Image//boat_left_up.png");
 	bottleImg=iLoadImage( "Image//Bottol.png");
-	treeImg = iLoadImage("Image//tree.png");
+	treeImg = iLoadImage("Image//treee.png");
 	level3gp1Img = iLoadImage("Image//level3gp1.png");
 	level3gp2Img = iLoadImage("Image//level3gp2.png");
 	for (int i = 0; i < 4; i++)

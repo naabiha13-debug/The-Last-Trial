@@ -225,19 +225,22 @@ void drawBirds(int worldX, int jungleScreenCount)
 // ---------------- Trees (obstacles) ----------------
 
 const int treeCount = 4;
-const int treeWidth = 90;
-const int treeHeight = 180;
-const int treeTrunkOffsetX = 10;
-const int treeTrunkWidth = 90;
-const int treeTrunkOffsetY = 100;
-const int treeTrunkHeight = 25;
+const int treeWidth = 100;
+const int treeHeight = 100;
+
+const int treeTrunkOffsetX = 45;    // left dik theke koto shift kore start hobe
+const int treeTrunkWidth = 60;    // trunk-er actual width
+const int treeTrunkOffsetY = 20;    // upor theke koto shift
+const int treeTrunkHeight = 130;   // trunk-er actual height
 const int treeCollisionGapY = 35;
+
 
 int treeWorldX[treeCount];
 int treeY[treeCount];
 bool treeInit = false;
-bool boatHitTree = false;   
+bool boatHitTree = false;
 int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
+int treeFixedY[treeCount] = { boatMinY + 20, boatMinY + 60, boatMaxY - 60, boatMaxY - 20 };
 
 void initTrees(int jungleScreenCount)
 {
@@ -245,27 +248,21 @@ void initTrees(int jungleScreenCount)
 	treeInit = true;
 
 	int zoneStart = jungleScreenCount * riverScreenWidth + 40;
-
-	// River4 half
 	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2;
 
-	//gap between trees
 	int zoneSpan = zoneEnd - zoneStart;
 	int segmentWidth = zoneSpan / treeCount;
 
 	int treeMinY = boatMinY + 20;
 	int treeMaxY = boatMaxY - 20;
-
 	for (int i = 0; i < treeCount; i++)
 	{
 		int segStart = zoneStart + i * segmentWidth;
 		treeWorldX[i] = segStart + (rand() % segmentWidth) - treeExtraShiftX[i];
-		treeY[i] = treeMinY + (rand() % (treeMaxY - treeMinY));
+		treeY[i] = treeFixedY[i];
 	}
 }
 
-
-// frontPass = false -> tree behind boat, true frontt of boat
 void drawTrees(int worldX, bool frontPass)
 {
 	for (int i = 0; i < treeCount; i++)
@@ -274,17 +271,43 @@ void drawTrees(int worldX, bool frontPass)
 		{
 			int screenX = treeWorldX[i] - worldX;
 			if (screenX > -treeWidth && screenX < 1000)
-				iShowImage(screenX, treeY[i], treeWidth + 60, treeHeight - 15, treeImg);
+			{
+				iShowImage(screenX, treeY[i], treeWidth, treeHeight, treeImg);
+
+			}
 		}
 	}
 }
 
-// boatWorldX = boat current world X 
+// Check if boat would overlap any tree if placed at (boatX, by)
+bool wouldHitTree(int boatX, int by)
+{
+	int boatLeft = boatX;
+	int boatRight = boatX + boatWidth;
+	int boatTop = by + boatHitboxOffsetY;
+	int boatBottom = boatTop + boatHitboxHeight;
+
+	for (int i = 0; i < treeCount; i++)
+	{
+		int trunkLeft = treeWorldX[i] + treeTrunkOffsetX;
+		int trunkRight = trunkLeft + treeTrunkWidth;
+		int trunkTop = treeY[i] + treeTrunkOffsetY;
+		int trunkBottom = trunkTop + treeTrunkHeight;
+
+		bool overlapX = boatRight > trunkLeft && boatLeft < trunkRight;
+		bool overlapY = boatBottom > trunkTop && boatTop < trunkBottom;
+
+		if (overlapX && overlapY)
+			return true;
+	}
+	return false;
+}
 void updateTrees(int boatWorldX)
 {
 	if (!inBoat) return;
 
-	int boatCenterX = boatWorldX + boatWidth / 2;
+	int boatLeft = boatWorldX;
+	int boatRight = boatWorldX + boatWidth;
 	int boatTop = boatY + boatHitboxOffsetY;
 	int boatBottom = boatTop + boatHitboxHeight;
 
@@ -295,7 +318,7 @@ void updateTrees(int boatWorldX)
 		int trunkTop = treeY[i] + treeTrunkOffsetY;
 		int trunkBottom = trunkTop + treeTrunkHeight;
 
-		bool overlapX = boatCenterX > trunkLeft && boatCenterX < trunkRight;
+		bool overlapX = boatRight > trunkLeft && boatLeft < trunkRight;
 		bool overlapY = boatBottom > trunkTop && boatTop < trunkBottom;
 
 		if (overlapX && overlapY)

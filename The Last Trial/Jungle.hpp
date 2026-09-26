@@ -564,13 +564,17 @@ void updateJungle()
 
 	if (inBoat)
 	{
+		int newBoatY = boatY;
 		if (isSpecialKeyPressed(GLUT_KEY_UP))
-			boatY += boatSpeedY;
+			newBoatY += boatSpeedY;
 		if (isSpecialKeyPressed(GLUT_KEY_DOWN))
-			boatY -= boatSpeedY;
+			newBoatY -= boatSpeedY;
 
-		if (boatY < boatMinY) boatY = boatMinY;
-		if (boatY > boatMaxY) boatY = boatMaxY;
+		if (newBoatY < boatMinY) newBoatY = boatMinY;
+		if (newBoatY > boatMaxY) newBoatY = boatMaxY;
+
+		if (!wouldHitTree(playerWorldX, newBoatY))
+			boatY = newBoatY;
 	}
 
 	if (inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT)
@@ -688,6 +692,8 @@ void updateJungle()
 	{
 		jungleFacingRight = true;
 
+		int moveSpeed = jumpingJungle ? 10 : 5;
+
 		bool blockedByRock = false;
 		if (!jumpingJungle)
 		{
@@ -698,19 +704,7 @@ void updateJungle()
 			}
 		}
 
-		bool blockedByTree = false;
-		if (inBoat)
-		{
-			for (int i = 0; i < treeCount; i++)
-			{
-				bool xOverlap = (playerWorldX + boatWidth > treeWorldX[i]) && (playerWorldX < treeWorldX[i] + treeWidth);
-				bool yClose = abs(boatY - treeY[i]) < treeCollisionGapY;
-				if (xOverlap && yClose)
-					blockedByTree = true;
-			}
-		}
-
-		int moveSpeed = jumpingJungle ? 10 : 5;
+		bool blockedByTree = inBoat && wouldHitTree(playerWorldX + moveSpeed, boatY);
 
 		if (playerWorldX < worldMax && !blockedByRock && !blockedByTree)
 			playerWorldX += moveSpeed;
@@ -777,7 +771,10 @@ void drawDontMoveSign()
 const int totalControlRoomDistance = 600;
 
 void drawDistanceCounter()
-{
+{   
+	if (showPinFinal)
+		return;
+
 	float progress = (float)playerWorldX / (float)riverEndWorldX;
 	if (progress < 0.0f) progress = 0.0f;
 	if (progress > 1.0f) progress = 1.0f;

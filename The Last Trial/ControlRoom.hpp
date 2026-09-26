@@ -722,19 +722,20 @@ void drawControlRoom()
 	drawControlRoomGuard();
 	drawMaskGuard();
 	drawControlRoomPlayer();
-	drawControlRoomHealthBars();
+
+	if (!crMaskGuardDefeated)
+		drawControlRoomHealthBars();
+
 	if (crShowUniformMsg)
 		iShowImage(360, 300, 250, 50, uniformMsgImg);
 
 	if (crShowGunMsg)
 		iShowImage(360, 300, 250, 50, gunMsgImg);
-	if (crShowUsbMsg)                                     
+	if (crShowUsbMsg)
 		iShowImage(360, 300, 250, 50, usbCollectedImg);
 	if (crShowUsbPickupMsg)
 		iShowImage(360, 300, 250, 50, usbImg);
 }
-
-
 void handleControlRoomClick(int mx, int my)
 {
 
