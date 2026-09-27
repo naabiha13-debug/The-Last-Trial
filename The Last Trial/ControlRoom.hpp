@@ -65,6 +65,8 @@ bool crPlayerDefeated = false;
 
 bool crCombatOver = false;
 
+bool crSpaceWasDown = false;
+
 // ---------------- Health bar UI ----------------
 const int crHealthWidth = 250;
 const int crHealthHeight = 30;
@@ -305,6 +307,7 @@ void updateControlRoomGuard()
 			crGuardAttackFrame = 0;
 			crGuardAttackTimer = 0;
 			crGuardHitRegisteredThisSwing = false;
+			playAxeSound();
 		}
 
 		crGuardAttackTimer++;
@@ -424,6 +427,8 @@ void updateMaskGuard()
 
 			if (crMaskGuardAttackFrame == 1 && !crGuardHitRegisteredThisSwing && !crPlayerDefeated)
 			{
+				playEnemyGunSound();
+
 				if (distance <= crMaskCombatRange)
 				{
 					crMaskRawHitsOnPlayer++;          
@@ -439,6 +444,8 @@ void updateMaskGuard()
 					{
 						crPlayerDefeated = true;
 						crCombatOver = true;
+						stopEnemyGunSound();  
+						stopGunSound();
 					}
 				}
 			}
@@ -454,6 +461,8 @@ void updateMaskGuard()
 	}
 	else
 	{
+		if (crMaskGuardAttacking)
+			stopEnemyGunSound();
 		crMaskGuardAttacking = false;
 		crMaskGuardAttackFrame = 0;
 	}
@@ -555,6 +564,24 @@ void updateControlRoom()
 
 	bool spaceDown = (isKeyPressed(' ') != 0);
 
+
+	bool spaceJustPressed = spaceDown && !crSpaceWasDown;
+	bool spaceJustReleased = !spaceDown && crSpaceWasDown;
+	crSpaceWasDown = spaceDown;
+
+	if (spaceJustPressed)
+	{
+		if (crGunCollected)
+			playGunSound();
+		else
+			playAxeSound();
+	}
+
+	if (spaceJustReleased && crGunCollected)
+	{
+		stopGunSound();
+	}
+
 	if (crGunCollected)
 	{
 		// ---- Gun: hold-to-loop attack ----
@@ -575,6 +602,7 @@ void updateControlRoom()
 			}
 			if (crAttackFrame == 1 && !crPlayerHitRegisteredThisSwing && !crMaskGuardDefeated)
 			{
+				playGunSound();
 				int distance = abs(crPlayerWorldX - crMaskGuardWorldX);
 				if (distance <= crMaskCombatRange)
 				{
@@ -592,6 +620,8 @@ void updateControlRoom()
 						crCombatOver = true;
 						crShowUsbMsg = true;
 						crUsbMsgTimer = 0;
+						stopGunSound();         
+						stopEnemyGunSound();
 					}
 				}
 			}
@@ -616,6 +646,7 @@ void updateControlRoom()
 			crAttackFrame = 0;
 			crAttackTimer = 0;
 			crPlayerHitRegisteredThisSwing = false;
+			playAxeSound();
 		}
 
 		if (crAttacking)

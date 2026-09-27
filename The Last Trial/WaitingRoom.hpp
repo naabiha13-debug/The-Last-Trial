@@ -314,6 +314,7 @@ void handleWaitingRoomClick(int mx, int my)
 	{
 		keyCollected = true;
 		keyMsgShow = true;
+		playKeyCollectSound();
 		return;
 	}
 

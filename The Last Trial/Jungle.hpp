@@ -602,6 +602,7 @@ void updateJungle()
 				{
 					paperCollected[activePaperIndex] = true;
 					hintsCollected++;
+					playPaperHintCollectSound();
 				}
 				activePaperIndex = -1;
 			}

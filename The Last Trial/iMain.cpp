@@ -5,7 +5,6 @@ int storyPage = 1;
 #include "Level2.hpp"
 #include "Level3.hpp"
 #include <math.h>
-#include "Audio.hpp"
 #include <stdlib.h>
 
 int x = 0;
@@ -16,6 +15,11 @@ bool mergeDebugKeyLatched = false;
 bool level1MusicStopped = false;
 bool level2MusicStopped = false;
 bool level3MusicStopped = false;
+
+bool level1ResultSoundPlayed = false;
+bool level2ResultSoundPlayed = false;
+bool level3LoseSoundPlayed = false;
+bool level3WinSoundPlayed = false;
 
 void iDraw()
 {
@@ -346,6 +350,23 @@ void iMouse(int button, int state, int mx, int my)
 			{
 				level1MusicStopped = false;
 			}
+			if (level1GameOver && !level1ResultSoundPlayed)
+			{
+				bool won =
+					(level1Result == RESULT_WIN_BOT_DIED) ||
+					(level1Result == RESULT_WIN_TIME_UP);
+
+				if (won)
+					playGameWinSound();
+				else
+					playGameOverSound();
+
+				level1ResultSoundPlayed = true;
+			}
+			if (!level1GameOver)
+			{
+				level1ResultSoundPlayed = false;
+			}
 		}
 		if (currentScreen == 5)
 		{
@@ -381,6 +402,21 @@ void iMouse(int button, int state, int mx, int my)
 	if (currentScreen == 5 && level2GameOver)       
 	{
 		mciSendString("stop level2song", NULL, 0, NULL);
+		
+		if (!level2ResultSoundPlayed)
+		{
+			if (level2Result == 2)
+				playGameWinSound();
+			else
+				playGameOverSound();
+
+			level2ResultSoundPlayed = true;
+		}
+	}
+	if (currentScreen == 5 && !level2GameOver)
+	{
+		level2ResultSoundPlayed = false;
+	
 	}
 
 	// Level 3
@@ -412,16 +448,39 @@ void iMouse(int button, int state, int mx, int my)
 		}
 	}
 
-	if (currentScreen == 6 && isGameOver() && !level3MusicStopped)
+	
+	bool level3Over = isGameOver() || crShowUsbSuccess;
+
+	if (currentScreen == 6 && level3Over && !level3MusicStopped)
 	{
 		stopLevel3Music();
 		level3MusicStopped = true;
 	}
-	if (currentScreen == 6 && !isGameOver())
+	if (currentScreen == 6 && !level3Over)
 	{
 		level3MusicStopped = false;
 	}
 
+	if (currentScreen == 6 && isGameOver() && !level3LoseSoundPlayed)
+	{
+		playGameOverSound();
+		level3LoseSoundPlayed = true;
+	}
+	if (currentScreen == 6 && !isGameOver())
+	{
+		level3LoseSoundPlayed = false;
+	}
+
+	// final win screen (USB insert success)
+	if (currentScreen == 6 && crShowUsbSuccess && !level3WinSoundPlayed)
+	{
+		playGameWinSound();
+		level3WinSoundPlayed = true;
+	}
+	if (currentScreen == 6 && !crShowUsbSuccess)
+	{
+		level3WinSoundPlayed = false;
+	}
 	
 
 
@@ -466,6 +525,11 @@ void iMouse(int button, int state, int mx, int my)
 	    bool level1MusicStopped = false;
 		bool level2MusicStopped = false;
 		bool level3MusicStopped = false;
+
+		bool level1ResultSoundPlayed = false;
+		bool level2ResultSoundPlayed = false;
+		bool level3LoseSoundPlayed = false;
+		bool level3WinSoundPlayed = false;
 	}
 
 	// Enter advances from the title screen to the loading screen

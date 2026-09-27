@@ -250,6 +250,7 @@ void updateLevel2()
 				playerHealth = L2_HEALTH_MAX;
 
 			triggerPlayerCatch();
+			playBiscuitCollectSound();
 		}
 	}
 	// =====================================
