@@ -1,4 +1,6 @@
-﻿#include "iGraphics.h"
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include "iGraphics.h"
+#include "savedata.hpp"
 int storyPage = 1;
 #include "menu.hpp"
 #include "Level1.hpp"
@@ -571,6 +573,8 @@ void iMouse(int button, int state, int mx, int my)
 int main()
 {
 	loadAudio();
+	loadGame();
+	
 	iInitialize(1000, 600, "The Last Trial");
 	initMenu();
 	iSetTimer(15, updateCharacterAnimation);

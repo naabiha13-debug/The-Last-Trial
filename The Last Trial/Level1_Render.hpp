@@ -3,6 +3,7 @@
 
 #include "Level1_Assets.hpp"
 
+
 int textPixelWidth(char *str, void *font)
 {
 	int width = 0;

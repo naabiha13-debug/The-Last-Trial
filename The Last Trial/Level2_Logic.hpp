@@ -4,7 +4,9 @@
 #include "iGraphics.h"
 #include "Level2_Config.hpp"
 #include "Level2_Character.hpp"
+#include "savedata.hpp"
 
+bool level2Saved = false;
 
 
 int playerBgOffset = 0;
@@ -167,7 +169,14 @@ void updateLevel2()
 {
 
 	if (level2GameOver)
+	{
+		if (!level2Saved)
+		{
+			level2Saved = true;
+			saveLevel2Result(level2Result == 2 ? 1 : 0);
+		}
 		return;
+	}
 
 	if (playerFalling)
 		return;
@@ -391,7 +400,8 @@ void initBridge()
 	level2Result = 0;
 
 	bridgeStartTime = GetTickCount();
-
+	level2Saved = false;
+	setCurrentLevel(2);
 	initBiscuits();
 
 	// ===== Reset player state =====

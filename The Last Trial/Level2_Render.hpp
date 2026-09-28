@@ -515,7 +515,13 @@ void drawLevel2Border()
 
 
 void drawLevel2EndScreen()
-{
+{    
+	if (!level2Saved)
+	{
+		level2Saved = true;
+		saveLevel2Result(level2Result == 2 ? 1 : 0);
+	}
+
 	int img = (level2Result == 2) ? level2WinImg : gameOver2Img;
 
 	int dispW, dispH, x, y;

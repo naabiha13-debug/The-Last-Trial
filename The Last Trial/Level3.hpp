@@ -10,6 +10,10 @@
 #include "Pinkeypad addition.hpp"
 
 #include "ControlRoom.hpp"  
+#include "savedata.hpp"
+
+bool level3WinSaved = false;
+bool level3LoseSaved = false;
 
 // Position of the buttons under the game-over image — change these to move them.
 const int gameOverAgainX = 400, gameOverAgainY = 140, gameOverAgainW = 200, gameOverAgainH = 60;
@@ -66,10 +70,32 @@ void drawGameOverScreen()
 
 void drawLevel3()
 {
+	if (saveCurrentLevel != 3)
+		setCurrentLevel(3);
+
 	if (isGameOver())
 	{
+		if (!level3LoseSaved)
+		{
+			level3LoseSaved = true;
+			saveLevel3Result(0);
+		}
 		drawGameOverScreen();
 		return;
+	}
+	level3LoseSaved = false;   // retry korle abar mora gele save hobe
+
+	if (crShowUsbSuccess)
+	{
+		if (!level3WinSaved)
+		{
+			level3WinSaved = true;
+			saveLevel3Result(1);
+		}
+	}
+	else
+	{
+		level3WinSaved = false;
 	}
 
 	if (waitingRoomStage == 6)

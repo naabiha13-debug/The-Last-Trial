@@ -110,6 +110,7 @@
     <ClInclude Include="Level3_Assets.hpp" />
     <ClInclude Include="Level3_Player.hpp" />
     <ClInclude Include="menu.hpp" />
+    <ClInclude Include="savedata.hpp" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="WaitingRoom.hpp" />
     <ClInclude Include="WaitingroomHint.hpp" />

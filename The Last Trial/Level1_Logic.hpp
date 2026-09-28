@@ -1,6 +1,10 @@
 #ifndef LEVEL1_LOGIC_HPP
 #define LEVEL1_LOGIC_HPP
 #include "Level1_Render.hpp"
+#include "savedata.hpp"
+
+bool level1Saved = false;
+
 void updateTileVisibility()
 {
 	double elapsed =
@@ -175,6 +179,23 @@ void level1Update()
 
 	if (level1GameOver)
 	{
+		if (!level1Saved)
+		{
+			level1Saved = true;
+
+			bool won =
+				(level1Result == RESULT_WIN_BOT_DIED) ||
+				(level1Result == RESULT_WIN_TIME_UP);
+
+			int qb = won ? (qualifiedBot + 1) : 0;
+
+			saveLevel1Result(
+				player.score,
+				bots[0].score,
+				bots[1].score,
+				qb,
+				won ? 1 : 0);
+		}
 		return;
 	}
 	updateTileVisibility();
@@ -206,6 +227,8 @@ void startLevel1()
 	level1Time = currentGameTime;
 	level1Round = 1;
 	level1Result = RESULT_NONE;
+	level1Saved = false;
+	setCurrentLevel(1);
 	level1TimerStarted = false;
 	tileTimerStart = clock();
 	tilesVisible = true;
