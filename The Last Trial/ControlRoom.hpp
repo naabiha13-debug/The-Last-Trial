@@ -513,6 +513,7 @@ void updateControlRoom()
 			if (isKeyPressed('c') || isKeyPressed('C'))
 			{
 				crGunCollected = true;
+				playEquipmentCollectSound();
 				crShowGunMsg = false;
 				crWalkFrame = 0;
 			}

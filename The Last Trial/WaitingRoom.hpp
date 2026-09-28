@@ -325,6 +325,7 @@ void handleWaitingRoomClick(int mx, int my)
 	{
 		doorState = 1;
 		doorTimer = 0;
+		playDoorSound();
 		return;
 	}
 

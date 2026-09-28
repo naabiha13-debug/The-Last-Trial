@@ -450,6 +450,8 @@ void drawPinFinal()
 
 void handleJungleClick(int mx, int my)
 {
+	if (inBoat)
+		playWaterSplashSound();
 
 	if (showLevel3Gp1)
 	{
@@ -533,6 +535,7 @@ void updateBottles()
 		{
 			bottleCollected[i] = true;
 			hintsCollected++;
+			playGlassHintSound();
 		}
 	}
 }
@@ -581,6 +584,7 @@ void updateJungle()
 		&& playerWorldX >= (riverEndWorldX - boatWidth))
 	{
 		jumpingJungle = true;
+		playJumpSound();
 		exitingBoat = true;
 		inBoat = false;
 		reachedRiverEnd = true;
@@ -638,6 +642,7 @@ void updateJungle()
 	if (!inBoat && !jumpingJungle && isSpecialKeyPressed(GLUT_KEY_UP) && isSpecialKeyPressed(GLUT_KEY_RIGHT))
 	{
 		jumpingJungle = true;
+		playJumpSound();
 	}
 
 	if (jumpingJungle)

@@ -20,6 +20,7 @@ void startLevel2Intro()
 {
 	level2Intro = true;
 	level2IntroStartTime = GetTickCount();
+	playCountdownMusic();
 }
 
 void updateLevel2Intro()
@@ -29,6 +30,7 @@ void updateLevel2Intro()
 		if (GetTickCount() - level2IntroStartTime >= LEVEL2_INTRO_DURATION)
 		{
 			level2Intro = false;
+			stopCountdownMusic();
 		}
 	}
 }

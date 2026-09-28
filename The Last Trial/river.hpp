@@ -361,7 +361,10 @@ void updateAxe(int boatWorldX)
 	if (!inBoat || axeCollected) return;
 
 	if (abs((boatWorldX + 40) - axeWorldX) < 60 && abs((boatY + 40) - axeY) < 60)
+	{
 		axeCollected = true;
+		playEquipmentCollectSound();
+	}
 }
 
 #endif
