@@ -237,10 +237,10 @@ const int treeCollisionGapY = 35;
 
 int treeWorldX[treeCount];
 int treeY[treeCount];
+int treeFixedY[treeCount] = { 40, 80, 120, 150 };
 bool treeInit = false;
 bool boatHitTree = false;
 int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
-int treeFixedY[treeCount] = { boatMinY + 20, boatMinY + 60, boatMaxY - 60, boatMaxY - 20 };
 
 void initTrees(int jungleScreenCount)
 {

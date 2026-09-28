@@ -1,9 +1,9 @@
 CurrentLevel: 3
 HighestUnlocked: 3
-Level1_Player: 0
-Level1_Bot1: 0
-Level1_Bot2: 1
-Level1_QualifiedBot: NONE
-Level2_Opponent: NONE
+Level1_Player: 14
+Level1_Bot1: 11
+Level1_Bot2: 14
+Level1_QualifiedBot: Bot2
+Level2_Opponent: Bot2
 Level2_Result: LOST
-Level3_Result: WON
+Level3_Result: LOST
