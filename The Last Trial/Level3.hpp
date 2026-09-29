@@ -15,7 +15,6 @@
 bool level3WinSaved = false;
 bool level3LoseSaved = false;
 
-// Position of the buttons under the game-over image — change these to move them.
 const int gameOverAgainX = 400, gameOverAgainY = 140, gameOverAgainW = 200, gameOverAgainH = 60;
 const int gameOverBackX = 400, gameOverBackY = 60, gameOverBackW = 200, gameOverBackH = 60;
 
@@ -24,8 +23,7 @@ bool isGameOver()
 	return jungleDead || pinWrong || crPlayerDefeated;
 }
 
-// Clears the specific death flag and resets only what's needed so the player
-// resumes right where they died, as if they never lost.
+
 void retryFromGameOver()
 {
 	if (jungleDead)
@@ -41,7 +39,7 @@ void retryFromGameOver()
 	else if (pinWrong)
 	{
 		resetPinEntry();
-		showPinFinal = true;   // keypad shows again so they can retry
+		showPinFinal = true;  
 	}
 	else if (crPlayerDefeated)
 	{
@@ -83,7 +81,7 @@ void drawLevel3()
 		drawGameOverScreen();
 		return;
 	}
-	level3LoseSaved = false;   // retry korle abar mora gele save hobe
+	level3LoseSaved = false;  
 
 	if (crShowUsbSuccess)
 	{

@@ -11,11 +11,11 @@
 #define SAVE_LOST 2
 
 int saveCurrentLevel = 1;
-int saveHighestUnlocked = 1;// player kon level porjonto pouchechhe
-int saveL1Player = 0;            // Level 1 player score
-int saveL1Bot1 = 0;              // Level 1 bot 1 score
-int saveL1Bot2 = 0;              // Level 1 bot 2 score
-int saveL1QualBot = 0;           // 0 = keu na, 1 = Bot1, 2 = Bot2
+int saveHighestUnlocked = 1;
+int saveL1Player = 0;            
+int saveL1Bot1 = 0;            
+int saveL1Bot2 = 0;            
+int saveL1QualBot = 0;           
 int saveL2Result = SAVE_NOT_PLAYED;
 int saveL3Result = SAVE_NOT_PLAYED;
 
@@ -79,7 +79,7 @@ void loadGame()
 	if (fp == NULL)
 	{
 		resetSaveData();
-		saveGame();      // first time hole notun file banay dey
+		saveGame();   
 		return;
 	}
 
@@ -91,7 +91,7 @@ void loadGame()
 
 	if (ok != 9)
 	{
-		resetSaveData();   // file kharap ba purano format hole reset
+		resetSaveData();   
 		saveGame();
 		return;
 	}
@@ -100,9 +100,7 @@ void loadGame()
 	saveL3Result = saveTextToResult(r3);
 }
 
-// Level 1 sesh hole call korbe.
-// qualifiedBot: 1 = Bot1 jitse, 2 = Bot2 jitse, 0 = keu na
-// playerPassed: 1 jodi player Level 2 te jay, nahole 0
+
 void saveLevel1Result(int playerScore, int bot1Score, int bot2Score, int qualifiedBot, int playerPassed)
 {
 	saveL1Player = playerScore;
@@ -113,7 +111,7 @@ void saveLevel1Result(int playerScore, int bot1Score, int bot2Score, int qualifi
 	saveGame();
 }
 
-// Level 2 sesh hole call korbe (won = 1 jodi player jite, nahole 0)
+
 void saveLevel2Result(int won)
 {
 	saveL2Result = won ? SAVE_WON : SAVE_LOST;
@@ -121,7 +119,7 @@ void saveLevel2Result(int won)
 	saveGame();
 }
 
-// Level 3 sesh hole call korbe (won = 1 jodi player jite, nahole 0)
+
 void saveLevel3Result(int won)
 {
 	saveL3Result = won ? SAVE_WON : SAVE_LOST;
