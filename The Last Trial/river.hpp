@@ -240,7 +240,9 @@ int treeY[treeCount];
 bool treeInit = false;
 bool boatHitTree = false;
 int treeExtraShiftX[treeCount] = { 0, 0, 200, 0 };
-int treeFixedY[treeCount] = { boatMinY + 20, boatMinY + 60, boatMaxY - 60, boatMaxY - 20 };
+const int treeFixedOffsetX[treeCount] = { 530, 1300, 2100, 2900 };
+
+const int treeFixedY[treeCount] = { 40, 120, 60, 130 };
 
 void initTrees(int jungleScreenCount)
 {
@@ -248,17 +250,10 @@ void initTrees(int jungleScreenCount)
 	treeInit = true;
 
 	int zoneStart = jungleScreenCount * riverScreenWidth + 40;
-	int zoneEnd = (jungleScreenCount + 3) * riverScreenWidth + riverScreenWidth / 2;
 
-	int zoneSpan = zoneEnd - zoneStart;
-	int segmentWidth = zoneSpan / treeCount;
-
-	int treeMinY = boatMinY + 20;
-	int treeMaxY = boatMaxY - 20;
 	for (int i = 0; i < treeCount; i++)
 	{
-		int segStart = zoneStart + i * segmentWidth;
-		treeWorldX[i] = segStart + (rand() % segmentWidth) - treeExtraShiftX[i];
+		treeWorldX[i] = zoneStart + treeFixedOffsetX[i];
 		treeY[i] = treeFixedY[i];
 	}
 }
@@ -361,7 +356,10 @@ void updateAxe(int boatWorldX)
 	if (!inBoat || axeCollected) return;
 
 	if (abs((boatWorldX + 40) - axeWorldX) < 60 && abs((boatY + 40) - axeY) < 60)
+	{
 		axeCollected = true;
+		playEquipmentCollectSound();
+	}
 }
 
 #endif

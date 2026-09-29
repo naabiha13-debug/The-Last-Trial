@@ -62,6 +62,7 @@ void startPlayerJump()
 	playerJumping = true;
 	playerJumpFrame = 0;
 	playerJumpStartTime = GetTickCount();
+	playJumpSound();
 }
 
 float getPlayerSpeedFactor();

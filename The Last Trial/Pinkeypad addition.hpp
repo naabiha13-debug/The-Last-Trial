@@ -91,6 +91,8 @@ void handlePinKeypadClick(int mx, int my)
 
 		if (dx > -pinBtnHalfW && dx < pinBtnHalfW && dy > -pinBtnHalfH && dy < pinBtnHalfH)
 		{
+			playPinSound();
+
 			if (enteredPinLen < 3)
 			{
 				enteredPin[enteredPinLen] = pinButtons[i].digit;
@@ -101,14 +103,20 @@ void handlePinKeypadClick(int mx, int my)
 			if (enteredPinLen == 3)
 			{
 				if (strcmp(enteredPin, correctPin) == 0)
+				{
 					pinUnlocked = true;
+					playUnlockedPinSound();
+				}
 				else
+				{
 					pinWrong = true;
+					playErrorPinSound();
+				}
 			}
 			return;
 		}
 	}
-}   
+}
 void updatePinKeypad()
 {
 	if (!showPinFinal || !pinUnlocked)

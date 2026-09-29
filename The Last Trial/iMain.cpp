@@ -450,7 +450,13 @@ void iMouse(int button, int state, int mx, int my)
 		}
 	}
 
-	
+	const int riverSoundDistance = 500; 
+	bool riverSoundOn = (currentScreen == 6) && !l3IntroActive && waitingRoomStage == 6
+		&& !pinUnlocked && !isGameOver()
+		&& (playerWorldX + 120 >= riverStartWorldX - riverSoundDistance);
+	updateWaterStreamSound(riverSoundOn);
+
+
 	bool level3Over = isGameOver() || crShowUsbSuccess;
 
 	if (currentScreen == 6 && level3Over && !level3MusicStopped)
@@ -555,18 +561,6 @@ void iMouse(int button, int state, int mx, int my)
 				menuScreen = 1;
 			}
 		}
-	}
-
-
-	// Space is just a quick way to preview the game-over sound
-	if (isKeyPressed(' '))
-	{
-		mciSendString(
-			"play ggsong from 0",
-			NULL,
-			0,
-			NULL
-			);
 	}
 }
 
